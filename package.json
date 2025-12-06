@@ -22,7 +22,7 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "build": "turbo run build",
+    "build": "nest build",
     "test": "jest --detectOpenHandles --forceExit --verbose --runInBand --coverage --no-cache --passWithNoTests --config ./src/test/jest.e2e.json",
     "eslint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "prettier:fix": "prettier --write \"src/**/*.ts\"",
