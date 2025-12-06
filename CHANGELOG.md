@@ -1,3 +1,11 @@
+## [1.0.5](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.4...v1.0.5) (2025-12-06)
+
+
+### Bug Fixes
+
+* add npm ignore file and exclude all packages from src ([0094f8b](https://github.com/theycantrevealus/nestjs-couchbase/commit/0094f8bce18355a4b2334bbbf292bb3531f75acc))
+* publish configuration ([7e23ed9](https://github.com/theycantrevealus/nestjs-couchbase/commit/7e23ed947e56439f91940a22e1c05f393eec3dd7))
+
 ## [1.0.4](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.3...v1.0.4) (2025-12-06)
 
 
