@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.2...v1.0.3) (2025-12-06)
+
+
+### Bug Fixes
+
+* configure package publishing status ([78e6cb8](https://github.com/theycantrevealus/nestjs-couchbase/commit/78e6cb857255f7e4036e48d81461d406341beee8))
+
 ## [1.0.2](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.1...v1.0.2) (2025-12-06)
 
 
