@@ -1,0 +1,5 @@
+export const COUCHBASE_OPTIONS = "COUCHBASE_OPTIONS"
+export const COUCHBASE_CLUSTER = "COUCHBASE_CLUSTER"
+export const COUCHBASE_BUCKET = "COUCHBASE_BUCKET"
+export const SCHEMA_KEY = "couchbase:schema"
+export const RELATIONS_KEY = "couchbase:relations"

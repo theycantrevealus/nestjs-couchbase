@@ -1,0 +1,11 @@
+build/
+node_modules/
+docs/
+dist/
+.turbo/
+.vscode/
+**/*/dist/
+*.log
+*.tsbuildinfo
+.env
+src/test/coverage/
