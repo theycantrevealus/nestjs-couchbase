@@ -40,8 +40,9 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build
-        run: npm run build
+      - name: List build files
+        run: |
+          ls -R dist || echo "dist folder does not exist"
 
       # Semantic-release dry run (optional, can remove for real release)
       - name: Dry-run semantic-release
