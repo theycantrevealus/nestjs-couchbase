@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.1.0...v1.2.0) (2025-12-06)
+
+
+### Features
+
+* field property required, default, enum, transform, validate ([87a863a](https://github.com/theycantrevealus/nestjs-couchbase/commit/87a863ade6d1074c40aa5c2323bd4a014d31b73f))
+
 # [1.1.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.7...v1.1.0) (2025-12-06)
 
 
