@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.1...v1.0.2) (2025-12-06)
+
+
+### Bug Fixes
+
+* add nest deps ([7c5f0b1](https://github.com/theycantrevealus/nestjs-couchbase/commit/7c5f0b18ef71c348d76ce833d5f67a7e7446e73b))
+
 ## [1.0.1](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.0...v1.0.1) (2025-12-06)
 
 
