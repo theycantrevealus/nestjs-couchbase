@@ -1,4 +1,9 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  "compilerOptions": {
+    "outDir": "./dist",
+    "declaration": true,
+    "removeComments": true
+  },
+  "exclude": ["node_modules", "src/test", "test", "dist", "**/*spec.ts"]
 }
