@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.0...v1.0.1) (2025-12-06)
+
+
+### Bug Fixes
+
+* disable turbo on build ([d3e76e5](https://github.com/theycantrevealus/nestjs-couchbase/commit/d3e76e5e57177c2971dde49af590f8a965ee9ca2))
+
 # 1.0.0 (2025-12-06)
 
 
