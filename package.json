@@ -20,7 +20,7 @@
   "main": "index.js",
   "scripts": {
     "build": "turbo run build",
-    "test": "jest --detectOpenHandles --forceExit --verbose --runInBand --coverage --no-cache --config ./src/test/jest.e2e.instance.json",
+    "test": "jest --detectOpenHandles --forceExit --verbose --runInBand --coverage --no-cache --passWithNoTests --config ./src/test/jest.e2e.json",
     "eslint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "prettier:fix": "prettier --write \"src/**/*.ts\"",
     "prepack": "npm run build",
