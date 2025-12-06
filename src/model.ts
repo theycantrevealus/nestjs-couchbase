@@ -13,7 +13,7 @@ import {
   instanceToPlain,
 } from "class-transformer"
 import { validate, ValidationError } from "class-validator"
-import { v4 as uuid } from "uuid"
+import { v4 as uuidv4 } from "uuid"
 import {
   QueryOptionsExt,
   RelationOptions,
@@ -84,7 +84,7 @@ export class CouchBaseModel<T> {
     if (ts.updatedAt !== false) (instance as any)[ts.updatedAt] = now
     if (ts.deletedAt !== false) (instance as any)[ts.deletedAt] = null
 
-    const id = uuid()
+    const id = uuidv4()
     const content = instanceToPlain(instance)
 
     if (tx) await tx.insert(this.collection, id, content)
