@@ -1,3 +1,10 @@
+## [1.0.7](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.6...v1.0.7) (2025-12-06)
+
+
+### Bug Fixes
+
+* adjust uuid to compat with ESNext type ([71a19d5](https://github.com/theycantrevealus/nestjs-couchbase/commit/71a19d5e5fad76111a044972f6a69321b4d9082f))
+
 ## [1.0.6](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.5...v1.0.6) (2025-12-06)
 
 
