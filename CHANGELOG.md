@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.7...v1.1.0) (2025-12-06)
+
+
+### Features
+
+* add nested type feature for field prop ([e4c596c](https://github.com/theycantrevealus/nestjs-couchbase/commit/e4c596c1d32500be37e0bd80718509e46f22f374))
+
 ## [1.0.7](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.6...v1.0.7) (2025-12-06)
 
 
