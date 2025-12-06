@@ -32,10 +32,15 @@ export interface QueryOptionsExt extends QueryOptions {
 
 export interface PropOptions {
   required?: boolean
-  type?: () => Function
   each?: boolean
   ref?: string
-  // TODO : Adjust the field definition property here
+  default?: any | (() => any)
+  enum?: any[] | Record<string, any>
+  enumName?: string
+  type?: () => Function
+  validate?: (value: any) => boolean
+  validateMessage?: string
+  transform?: (value: any) => any
 }
 
 export interface TimestampOptions {
@@ -58,6 +63,15 @@ export interface SchemaOptions {
   timestamps?: boolean | TimestampOptions
 }
 
+/**
+ * @interface
+ * Inspired by typeorm typing
+ *
+ * @param { string } propertyKey - Key of relation
+ * @param { RelationType } type - The type of relation
+ * @param { Function } model - Target relational model
+ * @param { string } foreignKey - Foreign collection field
+ */
 export interface RelationOptions {
   propertyKey: string
   type: RelationType

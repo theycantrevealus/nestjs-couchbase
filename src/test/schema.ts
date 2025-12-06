@@ -1,10 +1,23 @@
 import { BelongsTo, HasMany, HasOne, Prop, Schema } from "../decorator"
 
-/**
- * Additional class for nested type
- */
+enum Status {
+  HEALTHY = "healthy",
+  SICK = "sick",
+  QUANRANTINE = "quarantine",
+}
+
 export class OwnerContact {
+  @Prop({
+    validate: (v: string) => /^\\+[1-9][0-9]{7,14}$/.test(v),
+    validateMessage: "must be valid phone number",
+  })
   phone: string
+
+  @Prop({
+    validate: (v: string) =>
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v),
+    validateMessage: "must be valid email",
+  })
   email: string
 }
 
@@ -20,7 +33,7 @@ export class Breed {
   @Prop({ required: true })
   name: string
 
-  @Prop({ required: false })
+  @Prop({ required: false, default: "-" })
   remark: string
 }
 
@@ -42,6 +55,9 @@ export class Cat {
   @HasOne(() => Breed)
   breed: Breed
 
+  @Prop({ enum: Status, default: Status.HEALTHY, enumName: "Status" })
+  status: Status
+
   @BelongsTo(() => Owner)
   owner: Owner
 }
@@ -55,7 +71,10 @@ export class Cat {
   },
 })
 export class Owner {
-  @Prop({ required: true })
+  @Prop({
+    required: true,
+    transform: (value: string) => `CatLover ${value.trim()}`,
+  })
   name: string
 
   @HasMany(() => Cat)

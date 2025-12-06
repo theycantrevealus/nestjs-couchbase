@@ -10,6 +10,8 @@ import {
   IsObject,
   ValidateNested,
   IsOptional,
+  IsEnum,
+  registerDecorator,
 } from "class-validator"
 import "reflect-metadata"
 import { PROP_METADATA_KEY, SCHEMA_KEY } from "./constant"
@@ -19,7 +21,7 @@ import {
   getTimestampFields,
   resolveTimestamps,
 } from "./util"
-import { Type as ClassType } from "class-transformer"
+import { Type as ClassType, Transform } from "class-transformer"
 
 export function Schema(options: SchemaOptions = {}) {
   return (target: any) => {
@@ -57,10 +59,29 @@ export function Schema(options: SchemaOptions = {}) {
  */
 export function Prop(options: PropOptions = {}) {
   return (target: any, propertyKey: string) => {
-    const decorators: any[] = []
+    const decorators: PropertyDecorator[] = []
     const type = Reflect.getMetadata("design:type", target, propertyKey)
 
     const typeFn = options.type || (() => type)
+
+    if (options.type) {
+      ClassType(options.type)(target, propertyKey)
+    }
+
+    if (options.transform) {
+      Transform(({ value }) => options.transform!(value))(target, propertyKey)
+    }
+
+    if (options.default !== undefined) {
+      Transform(({ obj }) => {
+        if (obj[propertyKey] === undefined || obj[propertyKey] === null) {
+          return typeof options.default === "function"
+            ? (options.default as Function)()
+            : options.default
+        }
+        return obj[propertyKey]
+      })(target, propertyKey)
+    }
 
     if (type === Object || type === Array) {
       ClassType(typeFn)(target, propertyKey)
@@ -79,6 +100,37 @@ export function Prop(options: PropOptions = {}) {
       else if (type === Boolean) decorators.push(IsBoolean())
       else if (type === Date) decorators.push(IsDate())
       else if (type === Array) decorators.push(IsArray())
+    }
+
+    if (options.enum) {
+      const enumValues = Array.isArray(options.enum)
+        ? options.enum
+        : Object.values(options.enum)
+
+      decorators.push(
+        IsEnum(options.enum, {
+          message: `must be one of: ${enumValues.join(", ")}`,
+          ...(options.enumName
+            ? { context: { enumName: options.enumName } }
+            : {}),
+        }),
+      )
+    }
+
+    if (options.validate) {
+      registerDecorator({
+        name: "customPropValidator",
+        target: target.constructor,
+        propertyName: propertyKey,
+        options: {
+          message: options.validateMessage || `${propertyKey} is invalid`,
+        },
+        validator: {
+          validate(value: any) {
+            return options.validate!(value)
+          },
+        },
+      })
     }
 
     if (options.required) {
