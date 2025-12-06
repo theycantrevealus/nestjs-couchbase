@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.3...v1.0.4) (2025-12-06)
+
+
+### Bug Fixes
+
+* build config ([d45c7b6](https://github.com/theycantrevealus/nestjs-couchbase/commit/d45c7b66a22ea7e2bc2c074da71e6eb15e7f5d9e))
+
 ## [1.0.3](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.2...v1.0.3) (2025-12-06)
 
 
