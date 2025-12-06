@@ -1,11 +1,14 @@
 {
   "name": "nestjs-couchbase",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "",
   "keywords": [
     "couchbase",
     "nestjs"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "homepage": "https://github.com/theycantrevealus/nestjs-couchbase#readme",
   "bugs": {
     "url": "https://github.com/theycantrevealus/nestjs-couchbase/issues"
