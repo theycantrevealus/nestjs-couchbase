@@ -13,7 +13,6 @@ import {
   instanceToPlain,
 } from "class-transformer"
 import { validate, ValidationError } from "class-validator"
-import { v4 as uuidv4 } from "uuid"
 import {
   QueryOptionsExt,
   RelationOptions,
@@ -38,6 +37,11 @@ export class CouchBaseModel<T> {
     this.bucketName = collection.scope.bucket.name
     this.scopeName = collection.scope.name
     this.collectionName = collectionName
+  }
+
+  private async generateId(): Promise<string> {
+    const { v4: uuidv4 } = await import("uuid")
+    return uuidv4()
   }
 
   private getSchemaOptions(): Required<SchemaOptions> & {
@@ -84,7 +88,7 @@ export class CouchBaseModel<T> {
     if (ts.updatedAt !== false) (instance as any)[ts.updatedAt] = now
     if (ts.deletedAt !== false) (instance as any)[ts.deletedAt] = null
 
-    const id = uuidv4()
+    const id = await this.generateId()
     const content = instanceToPlain(instance)
 
     if (tx) await tx.insert(this.collection, id, content)
