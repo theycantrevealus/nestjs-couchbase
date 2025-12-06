@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.5...v1.0.6) (2025-12-06)
+
+
+### Bug Fixes
+
+* add uuid override to handle esm issue ([25fabaa](https://github.com/theycantrevealus/nestjs-couchbase/commit/25fabaa03154db57799ab62b81853b85f2e98a2d))
+
 ## [1.0.5](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.0.4...v1.0.5) (2025-12-06)
 
 
