@@ -32,6 +32,8 @@ export interface QueryOptionsExt extends QueryOptions {
 
 export interface PropOptions {
   required?: boolean
+  type?: () => Function
+  each?: boolean
   ref?: string
   // TODO : Adjust the field definition property here
 }

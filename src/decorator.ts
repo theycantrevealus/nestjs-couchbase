@@ -9,15 +9,17 @@ import {
   IsArray,
   IsObject,
   ValidateNested,
+  IsOptional,
 } from "class-validator"
 import "reflect-metadata"
-import { SCHEMA_KEY } from "./constant"
+import { PROP_METADATA_KEY, SCHEMA_KEY } from "./constant"
 import { PropOptions, SchemaOptions, TimestampOptions } from "./interface"
 import {
   createRelationDecorator,
   getTimestampFields,
   resolveTimestamps,
 } from "./util"
+import { Type as ClassType } from "class-transformer"
 
 export function Schema(options: SchemaOptions = {}) {
   return (target: any) => {
@@ -46,28 +48,50 @@ export function Schema(options: SchemaOptions = {}) {
   }
 }
 
+/**
+ * @function
+ * Prop function that mimic mongoose-type
+ *
+ * @param { PropOptions} options - Property option for data type
+ * @returns
+ */
 export function Prop(options: PropOptions = {}) {
   return (target: any, propertyKey: string) => {
     const decorators: any[] = []
     const type = Reflect.getMetadata("design:type", target, propertyKey)
 
-    if (type === String) {
-      decorators.push(IsString())
-    } else if (type === Number) {
-      decorators.push(IsNumber())
-    } else if (type === Boolean) {
-      decorators.push(IsBoolean())
-    } else if (type === Date) {
-      decorators.push(IsDate())
-    } else if (type === Array) {
-      decorators.push(IsArray())
-    } else if (type === Object) {
-      decorators.push(IsObject())
-      decorators.push(ValidateNested())
+    const typeFn = options.type || (() => type)
+
+    if (type === Object || type === Array) {
+      ClassType(typeFn)(target, propertyKey)
+      if (type === Array) {
+        decorators.push(IsArray())
+        if (options.each !== false) {
+          decorators.push(ValidateNested({ each: true }))
+        }
+      } else {
+        decorators.push(IsObject())
+        decorators.push(ValidateNested())
+      }
+    } else {
+      if (type === String) decorators.push(IsString())
+      else if (type === Number) decorators.push(IsNumber())
+      else if (type === Boolean) decorators.push(IsBoolean())
+      else if (type === Date) decorators.push(IsDate())
+      else if (type === Array) decorators.push(IsArray())
     }
 
     if (options.required) {
       decorators.push(IsDefined({ message: `${propertyKey} is required` }))
+    } else {
+      decorators.push(IsOptional())
+    }
+
+    const props: string[] =
+      Reflect.getMetadata(PROP_METADATA_KEY, target.constructor) || []
+    if (!props.includes(propertyKey)) {
+      props.push(propertyKey)
+      Reflect.defineMetadata(PROP_METADATA_KEY, props, target.constructor)
     }
 
     return applyDecorators(...decorators)(target, propertyKey)

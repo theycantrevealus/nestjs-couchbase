@@ -1,5 +1,13 @@
 import { BelongsTo, HasMany, HasOne, Prop, Schema } from "../decorator"
 
+/**
+ * Additional class for nested type
+ */
+export class OwnerContact {
+  phone: string
+  email: string
+}
+
 @Schema({
   collection: "Breed",
   timestamps: {
@@ -52,4 +60,7 @@ export class Owner {
 
   @HasMany(() => Cat)
   cats: Cat[]
+
+  @Prop({ type: () => OwnerContact })
+  contact: OwnerContact
 }
