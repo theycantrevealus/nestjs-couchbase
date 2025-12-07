@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.2.0...v1.3.0) (2025-12-07)
+
+
+### Features
+
+* unique field as prop notation and decorator with index manager ([cdde778](https://github.com/theycantrevealus/nestjs-couchbase/commit/cdde7786fec8c0e960284726af12e80d8d7d8f52))
+
 # [1.2.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.1.0...v1.2.0) (2025-12-06)
 
 
