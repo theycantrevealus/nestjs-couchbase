@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common"
-import { Breed } from "../schema"
 import { InjectModel } from "../../decorator"
 import { CouchBaseModel } from "../../model"
+import { CreateBreedDto } from "../dto"
+import { Breed } from "../schema/breed"
 
 @Injectable()
 export class BreedService {
@@ -20,5 +21,13 @@ export class BreedService {
       limit,
       sort,
     })
+  }
+
+  async create(data: CreateBreedDto) {
+    try {
+      return await this.breedModel.create(data)
+    } catch (e) {
+      console.error(e)
+    }
   }
 }

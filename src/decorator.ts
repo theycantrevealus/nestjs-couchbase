@@ -16,20 +16,21 @@ import "reflect-metadata"
 import { PROP_METADATA_KEY, SCHEMA_KEY } from "./constant"
 import { PropOptions, SchemaOptions, TimestampOptions } from "./interface"
 import {
-  addUniqueIndex,
   createRelationDecorator,
   getTimestampFields,
   resolveTimestamps,
+  toCollectionName,
 } from "./util"
 import { Type as ClassType, Transform } from "class-transformer"
 
 export function Schema(options: SchemaOptions = {}) {
   return (target: any) => {
+    const collection = options.collection || toCollectionName(target.name)
     const finalOptions: Required<SchemaOptions> & {
       timestamps: TimestampOptions
     } = {
       scope: options.scope || "_default",
-      collection: options.collection || target.name.toLowerCase(),
+      collection: collection.toLowerCase(),
       timestamps: resolveTimestamps(options.timestamps),
     }
 
@@ -65,37 +66,6 @@ export function Prop(options: PropOptions = {}) {
 
     if (options.type) {
       ClassType(options.type)(target, propertyKey)
-    }
-
-    if (options.unique) {
-      const schemaOpts = Reflect.getMetadata(
-        SCHEMA_KEY,
-        target.constructor,
-      ) as SchemaOptions
-      if (!schemaOpts?.collection) {
-        throw new Error(
-          `@Prop({ unique: true }) used on ${target.constructor.name}.${propertyKey} but class has no @Schema({ collection })`,
-        )
-      }
-
-      const collection = schemaOpts.collection
-
-      const indexName =
-        typeof options.unique === "object" && options.unique.name
-          ? options.unique.name
-          : `idx_${collection}_${propertyKey}_unique`
-
-      const caseSensitive =
-        typeof options.unique === "object"
-          ? (options.unique.caseSensitive ?? true)
-          : true
-
-      addUniqueIndex({
-        collection,
-        fields: [propertyKey],
-        indexName,
-        caseSensitive,
-      })
     }
 
     if (options.transform) {

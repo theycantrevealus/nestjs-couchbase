@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common"
 import { CouchBaseModel } from "../../model"
-import { Breed, Cat, Owner } from "../schema"
 import { CreateCatDto, UpdateCatDto } from "../dto"
 import { InjectModel } from "../../decorator"
+import { Cat } from "../schema/cat"
 
 @Injectable()
 export class CatService {

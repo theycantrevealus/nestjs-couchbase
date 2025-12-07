@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from "@nestjs/common"
+import {
+  BadRequestException,
+  NotFoundException,
+  OnModuleInit,
+} from "@nestjs/common"
 import {
   Collection,
   Cluster,
@@ -6,6 +10,7 @@ import {
   GetResult,
   QueryResult,
   TransactionGetResult,
+  CollectionManager,
 } from "couchbase"
 import {
   plainToInstance,
@@ -20,7 +25,7 @@ import {
   TimestampOptions,
 } from "./interface"
 import { RELATIONS_KEY, SCHEMA_KEY } from "./constant"
-import { getModelToken } from "./decorator"
+import { randomUUID } from "crypto"
 import { ModelRegistry } from "./util"
 
 export class CouchBaseModel<T> {
@@ -36,12 +41,60 @@ export class CouchBaseModel<T> {
   ) {
     this.bucketName = collection.scope.bucket.name
     this.scopeName = collection.scope.name
-    this.collectionName = collectionName
+    this.collectionName = collectionName.toLowerCase()
+    this.createCollectionsIfNotExist()
+  }
+
+  private async createCollectionsIfNotExist() {
+    const manager = this.collection.scope.bucket.collections()
+    await this.ensureScopeAndCollection(
+      manager,
+      this.scopeName,
+      this.collectionName.toLowerCase(),
+    )
+  }
+
+  private async ensureScopeAndCollection(
+    manager: CollectionManager,
+    scope: string,
+    collection: string,
+  ) {
+    if (scope !== "_default") {
+      try {
+        await Promise.race([
+          manager.createScope(scope),
+          new Promise((_, r) =>
+            setTimeout(() => r(new Error("timeout")), 10000),
+          ),
+        ])
+      } catch (err: any) {
+        if (
+          !err.message.includes("already exists") &&
+          !err.message.includes("timeout")
+        ) {
+          console.warn("Scope issue:", err)
+        }
+      }
+    }
+
+    try {
+      await Promise.race([
+        manager.createCollection(collection, scope),
+        new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 10000)),
+      ])
+    } catch (err: any) {
+      if (err.message.includes("timeout")) {
+        console.warn(
+          `createCollection() timed out for ${scope}.${collection} — likely hanging on Management API`,
+        )
+      } else if (!err.message.includes("collection exists")) {
+        console.warn("Collection creation failed:", err)
+      }
+    }
   }
 
   private async generateId(): Promise<string> {
-    const { v4: uuidv4 } = await import("uuid")
-    return uuidv4()
+    return randomUUID()
   }
 
   private getSchemaOptions(): Required<SchemaOptions> & {

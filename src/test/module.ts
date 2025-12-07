@@ -3,8 +3,10 @@ import { CatService } from "./services/service.cat"
 import { OwnerService } from "./services/service.owner"
 import { CouchBaseModule } from "../module"
 import { ConfigModule, ConfigService } from "@nestjs/config"
-import { Breed, Cat, Owner } from "./schema"
 import { BreedService } from "./services/service.breed"
+import { Breed } from "./schema/breed"
+import { Cat } from "./schema/cat"
+import { Owner } from "./schema/owner"
 
 @Module({
   imports: [
@@ -19,9 +21,9 @@ import { BreedService } from "./services/service.breed"
       }),
       inject: [ConfigService],
     }),
-    CouchBaseModule.forFeature([Breed, Cat, Owner]),
+    CouchBaseModule.forFeature([Breed]),
   ],
-  providers: [BreedService, CatService, OwnerService],
-  exports: [BreedService, CatService, OwnerService],
+  providers: [BreedService],
+  exports: [BreedService],
 })
 export class ScenarioModule {}

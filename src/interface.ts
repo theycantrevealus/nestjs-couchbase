@@ -32,12 +32,6 @@ export interface QueryOptionsExt extends QueryOptions {
 
 export interface PropOptions {
   required?: boolean
-  unique?:
-    | boolean
-    | {
-        name?: string
-        caseSensitive?: boolean
-      }
   each?: boolean
   ref?: string
   default?: any | (() => any)

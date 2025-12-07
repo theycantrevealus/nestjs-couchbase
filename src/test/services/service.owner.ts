@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common"
-import { Owner } from "../schema"
 import { InjectModel } from "../../decorator"
 import { CouchBaseModel } from "../../model"
+import { Owner } from "../schema/owner"
 
 @Injectable()
 export class OwnerService {

@@ -13,7 +13,7 @@ import {
   ICouchBaseOptions,
   ICouchBaseOptionsFactory,
 } from "./interface"
-import { CouchBaseIndexManager, CouchBaseService } from "./service"
+import { CouchBaseService } from "./service"
 import { getModelToken } from "./decorator"
 import {
   COUCHBASE_BUCKET,
@@ -25,19 +25,8 @@ import { CouchBaseModel } from "./model"
 import { ModelRegistry } from "./util"
 
 @Global()
-@Module({
-  providers: [CouchBaseIndexManager],
-  exports: [CouchBaseIndexManager],
-})
-export class CouchBaseModule implements OnModuleDestroy {
-  constructor(
-    @Inject(COUCHBASE_CLUSTER) private readonly cluster: couchbase.Cluster,
-  ) {}
-
-  async onModuleDestroy() {
-    await this.cluster.close()
-  }
-
+@Module({})
+export class CouchBaseModule {
   static forRoot(options: ICouchBaseOptions) {
     const providers: Provider[] = [
       { provide: COUCHBASE_OPTIONS, useValue: options },
@@ -64,7 +53,7 @@ export class CouchBaseModule implements OnModuleDestroy {
     return {
       module: CouchBaseModule,
       providers,
-      exports: [CouchBaseService],
+      exports: [COUCHBASE_CLUSTER, COUCHBASE_BUCKET, CouchBaseService],
     }
   }
 
@@ -79,10 +68,22 @@ export class CouchBaseModule implements OnModuleDestroy {
       {
         provide: COUCHBASE_CLUSTER,
         useFactory: async (opts: ICouchBaseOptions) => {
-          return await couchbase.connect(opts.connectionString, {
+          const cluster = await couchbase.connect(opts.connectionString, {
             username: opts.username,
             password: opts.password,
           })
+          // const diag = await cluster.diagnostics()
+          // console.log("Connected nodes:", diag.services)
+
+          // diag.services.kv?.forEach((ep: any) => {
+          //   console.log("KV node:", ep.id, ep.remote, ep.state)
+          // })
+          // const buckets = await cluster.buckets().getAllBuckets()
+          // console.log(
+          //   "Buckets:",
+          //   buckets.map((b) => b.name),
+          // )
+          return cluster
         },
         inject: [COUCHBASE_OPTIONS],
       },
@@ -100,7 +101,7 @@ export class CouchBaseModule implements OnModuleDestroy {
       module: CouchBaseModule,
       imports: options.imports || [],
       providers,
-      exports: [CouchBaseService],
+      exports: [COUCHBASE_CLUSTER, COUCHBASE_BUCKET, CouchBaseService],
     }
   }
 

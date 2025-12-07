@@ -70,43 +70,47 @@ export function getTimestampFields(ts: TimestampOptions): string[] {
   return fields
 }
 
-export function addUniqueIndex(metadata: UniqueIndexMetadata) {
-  const existing: UniqueIndexMetadata[] =
-    Reflect.getMetadata(PROP_UNIQUE_INDEXES_KEY, global) || []
-
-  const duplicate = existing.some(
-    (e) =>
-      e.collection === metadata.collection &&
-      e.indexName === metadata.indexName &&
-      e.fields.join(",") === metadata.fields.join(","),
-  )
-
-  if (!duplicate) {
-    existing.push(metadata)
-    Reflect.defineMetadata(PROP_UNIQUE_INDEXES_KEY, existing, global)
-  }
+export function toCollectionName(className: string): string {
+  return className.charAt(0).toLowerCase() + className.slice(1)
 }
 
-export function Unique(fields: string[], options?: { name?: string }) {
-  return (target: any) => {
-    const schemaOpts = Reflect.getMetadata(SCHEMA_KEY, target) as SchemaOptions
-    if (!schemaOpts?.collection) throw new Error("Missing @Schema()")
+// export function addUniqueIndex(metadata: UniqueIndexMetadata) {
+//   const existing: UniqueIndexMetadata[] =
+//     Reflect.getMetadata(PROP_UNIQUE_INDEXES_KEY, global) || []
 
-    const indexName =
-      options?.name || `idx_${schemaOpts.collection}_${fields.join("_")}_unique`
+//   const duplicate = existing.some(
+//     (e) =>
+//       e.collection === metadata.collection &&
+//       e.indexName === metadata.indexName &&
+//       e.fields.join(",") === metadata.fields.join(","),
+//   )
 
-    addUniqueIndex({
-      collection: schemaOpts.collection,
-      fields,
-      indexName,
-      caseSensitive: true,
-    })
-  }
-}
+//   if (!duplicate) {
+//     existing.push(metadata)
+//     Reflect.defineMetadata(PROP_UNIQUE_INDEXES_KEY, existing, global)
+//   }
+// }
 
-export function getAllUniqueIndexes(): UniqueIndexMetadata[] {
-  return Reflect.getMetadata(PROP_UNIQUE_INDEXES_KEY, global) || []
-}
+// export function Unique(fields: string[], options?: { name?: string }) {
+//   return (target: any) => {
+//     const schemaOpts = Reflect.getMetadata(SCHEMA_KEY, target) as SchemaOptions
+//     if (!schemaOpts?.collection) throw new Error("Missing @Schema()")
+
+//     const indexName =
+//       options?.name || `idx_${schemaOpts.collection}_${fields.join("_")}_unique`
+
+//     addUniqueIndex({
+//       collection: schemaOpts.collection,
+//       fields,
+//       indexName,
+//       caseSensitive: true,
+//     })
+//   }
+// }
+
+// export function getAllUniqueIndexes(): UniqueIndexMetadata[] {
+//   return Reflect.getMetadata(PROP_UNIQUE_INDEXES_KEY, global) || []
+// }
 
 export class ModelRegistry {
   private static models = new Map<string, CouchBaseModel<any>>()
