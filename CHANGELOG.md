@@ -1,3 +1,11 @@
+# [1.4.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.3.0...v1.4.0) (2025-12-07)
+
+
+### Features
+
+* auto create collection and scope on module start ([695283e](https://github.com/theycantrevealus/nestjs-couchbase/commit/695283ed069569fa91851a2d14ab89776578a5ec))
+* auto create index from schema property ([d551fa3](https://github.com/theycantrevealus/nestjs-couchbase/commit/d551fa318820ebdd21e42c2658e59fd992ca0b21))
+
 # [1.3.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.2.0...v1.3.0) (2025-12-07)
 
 
