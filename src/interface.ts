@@ -32,6 +32,12 @@ export interface QueryOptionsExt extends QueryOptions {
 
 export interface PropOptions {
   required?: boolean
+  unique?:
+    | boolean
+    | {
+        name?: string
+        caseSensitive?: boolean
+      }
   each?: boolean
   ref?: string
   default?: any | (() => any)
@@ -41,6 +47,13 @@ export interface PropOptions {
   validate?: (value: any) => boolean
   validateMessage?: string
   transform?: (value: any) => any
+}
+
+export interface UniqueIndexMetadata {
+  collection: string
+  fields: string[]
+  indexName: string
+  caseSensitive: boolean
 }
 
 export interface TimestampOptions {

@@ -1,4 +1,3 @@
-// decorators.ts
 import { applyDecorators, Inject, Type } from "@nestjs/common"
 import {
   IsDefined,
@@ -17,6 +16,7 @@ import "reflect-metadata"
 import { PROP_METADATA_KEY, SCHEMA_KEY } from "./constant"
 import { PropOptions, SchemaOptions, TimestampOptions } from "./interface"
 import {
+  addUniqueIndex,
   createRelationDecorator,
   getTimestampFields,
   resolveTimestamps,
@@ -35,7 +35,6 @@ export function Schema(options: SchemaOptions = {}) {
 
     Reflect.defineMetadata(SCHEMA_KEY, finalOptions, target)
 
-    // Auto-inject timestamp fields into prototype
     const fields = getTimestampFields(finalOptions.timestamps)
     fields.forEach((field) => {
       if (!Object.prototype.hasOwnProperty.call(target.prototype, field)) {
@@ -66,6 +65,37 @@ export function Prop(options: PropOptions = {}) {
 
     if (options.type) {
       ClassType(options.type)(target, propertyKey)
+    }
+
+    if (options.unique) {
+      const schemaOpts = Reflect.getMetadata(
+        SCHEMA_KEY,
+        target.constructor,
+      ) as SchemaOptions
+      if (!schemaOpts?.collection) {
+        throw new Error(
+          `@Prop({ unique: true }) used on ${target.constructor.name}.${propertyKey} but class has no @Schema({ collection })`,
+        )
+      }
+
+      const collection = schemaOpts.collection
+
+      const indexName =
+        typeof options.unique === "object" && options.unique.name
+          ? options.unique.name
+          : `idx_${collection}_${propertyKey}_unique`
+
+      const caseSensitive =
+        typeof options.unique === "object"
+          ? (options.unique.caseSensitive ?? true)
+          : true
+
+      addUniqueIndex({
+        collection,
+        fields: [propertyKey],
+        indexName,
+        caseSensitive,
+      })
     }
 
     if (options.transform) {

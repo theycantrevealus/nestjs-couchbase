@@ -13,7 +13,7 @@ import {
   ICouchBaseOptions,
   ICouchBaseOptionsFactory,
 } from "./interface"
-import { CouchBaseService } from "./service"
+import { CouchBaseIndexManager, CouchBaseService } from "./service"
 import { getModelToken } from "./decorator"
 import {
   COUCHBASE_BUCKET,
@@ -25,13 +25,14 @@ import { CouchBaseModel } from "./model"
 import { ModelRegistry } from "./util"
 
 @Global()
-@Module({})
+@Module({
+  providers: [CouchBaseIndexManager],
+  exports: [CouchBaseIndexManager],
+})
 export class CouchBaseModule implements OnModuleDestroy {
   constructor(
     @Inject(COUCHBASE_CLUSTER) private readonly cluster: couchbase.Cluster,
-  ) {
-    //
-  }
+  ) {}
 
   async onModuleDestroy() {
     await this.cluster.close()

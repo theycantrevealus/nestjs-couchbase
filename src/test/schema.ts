@@ -1,4 +1,5 @@
 import { BelongsTo, HasMany, HasOne, Prop, Schema } from "../decorator"
+import { Unique } from "../util"
 
 enum Status {
   HEALTHY = "healthy",
@@ -46,7 +47,7 @@ export class Breed {
   },
 })
 export class Cat {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   name: string
 
   @Prop()
@@ -70,12 +71,16 @@ export class Cat {
     deletedAt: "deleted_at",
   },
 })
+// @Unique(["email"], { name: "uniq_users_email" })
+@Unique(["username"])
 export class Owner {
   @Prop({
     required: true,
     transform: (value: string) => `CatLover ${value.trim()}`,
   })
   name: string
+
+  username: string
 
   @HasMany(() => Cat)
   cats: Cat[]

@@ -1,6 +1,6 @@
-// couchbase.service.ts
-import { Inject, Injectable } from "@nestjs/common"
+import { Inject, Injectable, OnModuleInit } from "@nestjs/common"
 import { Bucket, Cluster } from "couchbase"
+import { getAllUniqueIndexes } from "./util"
 
 @Injectable()
 export class CouchBaseService {
@@ -25,5 +25,44 @@ export class CouchBaseService {
     const collection = this.bucket.defaultCollection()
     const result = await collection.get(id)
     return result.content
+  }
+}
+
+@Injectable()
+export class CouchBaseIndexManager implements OnModuleInit {
+  constructor(private readonly cluster: Cluster) {}
+
+  async onModuleInit() {
+    await this.createUniqueIndexes()
+  }
+
+  private async createUniqueIndexes() {
+    const indexes = getAllUniqueIndexes()
+
+    for (const idx of indexes) {
+      const fieldList = idx.fields.map((f) => `\`${f}\``).join(", ")
+      const caseSensitive = idx.caseSensitive ? "" : " COLLATE UTF8_UNICODE_CI"
+
+      const query = `
+        CREATE UNIQUE INDEX IF NOT EXISTS \`${idx.indexName}\`
+        ON \`${idx.collection}\`(${fieldList})${caseSensitive}
+        WHERE deletedAt IS NULL
+      `
+
+      try {
+        await this.cluster.query(query)
+        console.log(`Unique index created: ${idx.indexName}`)
+      } catch (err: any) {
+        if (!err.message.includes("already exists")) {
+          console.warn(`Failed to create index ${idx.indexName}:`, err.message)
+        }
+      }
+    }
+
+    for (const idx of indexes) {
+      await this.cluster.query(
+        `BUILD INDEX ON \`${idx.collection}\`(\`${idx.indexName}\`)`,
+      )
+    }
   }
 }

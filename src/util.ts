@@ -1,6 +1,11 @@
 import { Type } from "class-transformer"
-import { RELATIONS_KEY } from "./constant"
-import { RelationOptions, TimestampOptions } from "./interface"
+import { PROP_UNIQUE_INDEXES_KEY, RELATIONS_KEY, SCHEMA_KEY } from "./constant"
+import {
+  RelationOptions,
+  SchemaOptions,
+  TimestampOptions,
+  UniqueIndexMetadata,
+} from "./interface"
 import { CouchBaseModel } from "./model"
 
 export function createRelationDecorator(type: RelationOptions["type"]) {
@@ -63,6 +68,44 @@ export function getTimestampFields(ts: TimestampOptions): string[] {
   if (ts.updatedAt !== false) fields.push(ts.updatedAt as string)
 
   return fields
+}
+
+export function addUniqueIndex(metadata: UniqueIndexMetadata) {
+  const existing: UniqueIndexMetadata[] =
+    Reflect.getMetadata(PROP_UNIQUE_INDEXES_KEY, global) || []
+
+  const duplicate = existing.some(
+    (e) =>
+      e.collection === metadata.collection &&
+      e.indexName === metadata.indexName &&
+      e.fields.join(",") === metadata.fields.join(","),
+  )
+
+  if (!duplicate) {
+    existing.push(metadata)
+    Reflect.defineMetadata(PROP_UNIQUE_INDEXES_KEY, existing, global)
+  }
+}
+
+export function Unique(fields: string[], options?: { name?: string }) {
+  return (target: any) => {
+    const schemaOpts = Reflect.getMetadata(SCHEMA_KEY, target) as SchemaOptions
+    if (!schemaOpts?.collection) throw new Error("Missing @Schema()")
+
+    const indexName =
+      options?.name || `idx_${schemaOpts.collection}_${fields.join("_")}_unique`
+
+    addUniqueIndex({
+      collection: schemaOpts.collection,
+      fields,
+      indexName,
+      caseSensitive: true,
+    })
+  }
+}
+
+export function getAllUniqueIndexes(): UniqueIndexMetadata[] {
+  return Reflect.getMetadata(PROP_UNIQUE_INDEXES_KEY, global) || []
 }
 
 export class ModelRegistry {
