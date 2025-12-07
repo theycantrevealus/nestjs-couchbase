@@ -41,9 +41,13 @@
     "rxjs": "^7.8.0"
   },
   "dependencies": {
-    "couchbase": "^4.6.0",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/platform-express": "^11.1.9",
+    "@nestjs/testing": "^11.1.9",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
+    "couchbase": "^4.6.0",
+    "dotenv": "^17.2.3",
     "lodash": "^4.17.21",
     "uuid": "^13.0.0"
   },

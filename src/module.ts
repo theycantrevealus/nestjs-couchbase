@@ -13,7 +13,7 @@ import {
   ICouchBaseOptions,
   ICouchBaseOptionsFactory,
 } from "./interface"
-import { CouchBaseService } from "./service"
+import { CouchBaseService, IndexBootstrapService } from "./service"
 import { getModelToken } from "./decorator"
 import {
   COUCHBASE_BUCKET,
@@ -22,13 +22,16 @@ import {
   SCHEMA_KEY,
 } from "./constant"
 import { CouchBaseModel } from "./model"
-import { ModelRegistry } from "./util"
+import { createAllUniqueIndexes, ModelRegistry } from "./util"
+import { DiscoveryService } from "@nestjs/core"
 
 @Global()
 @Module({})
 export class CouchBaseModule {
-  static forRoot(options: ICouchBaseOptions) {
+  static forRoot(options: ICouchBaseOptions): DynamicModule {
     const providers: Provider[] = [
+      DiscoveryService,
+      IndexBootstrapService,
       { provide: COUCHBASE_OPTIONS, useValue: options },
       {
         provide: COUCHBASE_CLUSTER,
@@ -60,30 +63,20 @@ export class CouchBaseModule {
   /**
    * @static
    */
-  static forRootAsync(options: ICouchBaseAsyncOptions) {
+  static forRootAsync(options: ICouchBaseAsyncOptions): DynamicModule {
     const asyncProviders = this.createAsyncProviders(options)
 
     const providers: Provider[] = [
       ...asyncProviders,
+      DiscoveryService,
+      IndexBootstrapService,
       {
         provide: COUCHBASE_CLUSTER,
         useFactory: async (opts: ICouchBaseOptions) => {
-          const cluster = await couchbase.connect(opts.connectionString, {
+          return await couchbase.connect(opts.connectionString, {
             username: opts.username,
             password: opts.password,
           })
-          // const diag = await cluster.diagnostics()
-          // console.log("Connected nodes:", diag.services)
-
-          // diag.services.kv?.forEach((ep: any) => {
-          //   console.log("KV node:", ep.id, ep.remote, ep.state)
-          // })
-          // const buckets = await cluster.buckets().getAllBuckets()
-          // console.log(
-          //   "Buckets:",
-          //   buckets.map((b) => b.name),
-          // )
-          return cluster
         },
         inject: [COUCHBASE_OPTIONS],
       },
@@ -94,11 +87,13 @@ export class CouchBaseModule {
         },
         inject: [COUCHBASE_CLUSTER, COUCHBASE_OPTIONS],
       },
+
       CouchBaseService,
     ]
 
     return {
       module: CouchBaseModule,
+      global: true,
       imports: options.imports || [],
       providers,
       exports: [COUCHBASE_CLUSTER, COUCHBASE_BUCKET, CouchBaseService],

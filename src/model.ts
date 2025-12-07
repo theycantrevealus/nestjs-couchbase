@@ -125,29 +125,33 @@ export class CouchBaseModel<T> {
     data: Partial<T>,
     tx?: TransactionAttemptContext,
   ): Promise<T & { id: string }> {
-    const instance = plainToInstance(this.schemaClass, data)
-    const errors = await validate(instance as any)
-    if (errors.length > 0) {
-      throw new BadRequestException(
-        errors.map((e) => Object.values(e.constraints || {})).flat(),
-      )
+    try {
+      const instance = plainToInstance(this.schemaClass, data)
+      const errors = await validate(instance as any)
+      if (errors.length > 0) {
+        throw new BadRequestException(
+          errors.map((e) => Object.values(e.constraints || {})).flat(),
+        )
+      }
+
+      const opts = this.getSchemaOptions()
+      const ts = opts.timestamps
+      const now = new Date()
+
+      if (ts.createdAt !== false) (instance as any)[ts.createdAt] = now
+      if (ts.updatedAt !== false) (instance as any)[ts.updatedAt] = now
+      if (ts.deletedAt !== false) (instance as any)[ts.deletedAt] = null
+
+      const id = await this.generateId()
+      const content = instanceToPlain(instance)
+
+      if (tx) await tx.insert(this.collection, id, content)
+      else await this.collection.insert(id, content)
+
+      return { ...instance, id } as T & { id: string }
+    } catch (e) {
+      console.error(e)
     }
-
-    const opts = this.getSchemaOptions()
-    const ts = opts.timestamps
-    const now = new Date()
-
-    if (ts.createdAt !== false) (instance as any)[ts.createdAt] = now
-    if (ts.updatedAt !== false) (instance as any)[ts.updatedAt] = now
-    if (ts.deletedAt !== false) (instance as any)[ts.deletedAt] = null
-
-    const id = await this.generateId()
-    const content = instanceToPlain(instance)
-
-    if (tx) await tx.insert(this.collection, id, content)
-    else await this.collection.insert(id, content)
-
-    return { ...instance, id } as T & { id: string }
   }
 
   async get(

@@ -5,6 +5,7 @@ import { CatService } from "./services/service.cat"
 import { OwnerService } from "./services/service.owner"
 import { CreateBreedDto } from "./dto"
 import * as dotenv from "dotenv"
+import { CouchBaseService } from "../service"
 
 dotenv.config({
   path: `${process.cwd()}/${
@@ -43,6 +44,8 @@ describe("Couchbase actual test", () => {
     moduleRef = await Test.createTestingModule({
       imports: [ScenarioModule],
     }).compile()
+    const app = moduleRef.createNestApplication()
+    await app.init()
     breedService = moduleRef.get<BreedService>(BreedService)
   })
 

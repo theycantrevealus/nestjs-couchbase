@@ -13,10 +13,13 @@ import {
   registerDecorator,
 } from "class-validator"
 import "reflect-metadata"
-import { PROP_METADATA_KEY, SCHEMA_KEY } from "./constant"
+import { PROP_METADATA_KEY, SCHEMA_KEY, SCHEMA_REGISTRY } from "./constant"
 import { PropOptions, SchemaOptions, TimestampOptions } from "./interface"
 import {
+  addUniqueIndex,
   createRelationDecorator,
+  getNestedPath,
+  getSchemaOptions,
   getTimestampFields,
   resolveTimestamps,
   toCollectionName,
@@ -34,7 +37,12 @@ export function Schema(options: SchemaOptions = {}) {
       timestamps: resolveTimestamps(options.timestamps),
     }
 
-    Reflect.defineMetadata(SCHEMA_KEY, finalOptions, target)
+    ;(target as any)[SCHEMA_KEY] = finalOptions
+    target.prototype[SCHEMA_KEY] = finalOptions
+    SCHEMA_REGISTRY.set(target, finalOptions)
+    target.prototype.__schema__ = finalOptions
+
+    // Reflect.defineMetadata(SCHEMA_KEY, finalOptions, target)
 
     const fields = getTimestampFields(finalOptions.timestamps)
     fields.forEach((field) => {
@@ -71,6 +79,45 @@ export function Prop(options: PropOptions = {}) {
     if (options.transform) {
       Transform(({ value }) => options.transform!(value))(target, propertyKey)
     }
+
+    // if (options.unique) {
+    //   let currentClass = target.constructor
+    //   let schemaOpts = getSchemaOptions(currentClass)
+
+    //   if (!schemaOpts?.collection) {
+    //     let proto = Object.getPrototypeOf(target)
+    //     while (proto && proto !== Object.prototype) {
+    //       const parentClass = proto.constructor
+    //       schemaOpts = getSchemaOptions(parentClass)
+    //       if (schemaOpts?.collection) {
+    //         currentClass = parentClass
+    //         break
+    //       }
+    //       proto = Object.getPrototypeOf(proto)
+    //     }
+    //   }
+
+    //   if (!schemaOpts?.collection) {
+    //     throw new Error(
+    //       `@Prop({ unique: true }) on ${target.constructor.name}.${propertyKey} — no @Schema() found`,
+    //     )
+    //   }
+
+    //   const collection = schemaOpts.collection
+    //   const fullPath = getNestedPath(target, propertyKey, currentClass.name) // ← use .name
+
+    //   const indexName =
+    //     typeof options.unique === "object" && options.unique.name
+    //       ? options.unique.name
+    //       : `idx_${collection}_${fullPath.replace(/\./g, "_")}_unique`
+
+    //   addUniqueIndex({
+    //     collection,
+    //     fields: [fullPath],
+    //     indexName,
+    //     caseSensitive: true,
+    //   })
+    // }
 
     if (options.default !== undefined) {
       Transform(({ obj }) => {

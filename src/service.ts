@@ -1,20 +1,24 @@
 import {
   Inject,
   Injectable,
+  OnApplicationBootstrap,
   OnApplicationShutdown,
-  OnModuleInit,
 } from "@nestjs/common"
 import { Bucket, Cluster } from "couchbase"
+import { createAllUniqueIndexes, getAllUniqueIndexes } from "./util"
+import { DiscoveryService } from "@nestjs/core"
 
 @Injectable()
-export class CouchBaseService implements OnApplicationShutdown, OnModuleInit {
+export class CouchBaseService
+  implements OnApplicationShutdown, OnApplicationBootstrap
+{
   constructor(
     @Inject("COUCHBASE_BUCKET") private readonly bucket: Bucket,
     @Inject("COUCHBASE_CLUSTER") private readonly cluster: Cluster,
   ) {}
 
-  async onModuleInit() {
-    // await this.createCollectionsIfNotExist()
+  async onApplicationBootstrap() {
+    await this.createUniqueIndexes()
   }
 
   async onApplicationShutdown() {
@@ -44,43 +48,42 @@ export class CouchBaseService implements OnApplicationShutdown, OnModuleInit {
     const result = await collection.get(id)
     return result.content
   }
+
+  private async createUniqueIndexes() {
+    const indexes = getAllUniqueIndexes()
+
+    for (const idx of indexes) {
+      const fieldList = idx.fields.map((f) => `\`${f}\``).join(", ")
+      const caseSensitive = idx.caseSensitive ? "" : " COLLATE UTF8_UNICODE_CI"
+
+      const query = `
+        CREATE INDEX IF NOT EXISTS \`${idx.indexName}\`
+        ON \`${this.bucket.name}\`.\`${idx.scope}\`.\`${idx.collection}\`(${fieldList})${caseSensitive}
+        WHERE \`deletedAt\` IS NULL
+      `
+
+      try {
+        await this.cluster.query(query)
+      } catch (err: any) {
+        if (!err.message.includes("already exists")) {
+          console.warn(`Failed to create index ${idx.indexName}:`, err)
+        }
+      }
+    }
+
+    for (const idx of indexes) {
+      await this.cluster.query(
+        `BUILD INDEX ON \`${idx.collection}\`(\`${idx.indexName}\`)`,
+      )
+    }
+  }
 }
 
-// @Injectable()
-// export class CouchBaseIndexManager implements OnModuleInit {
-//   constructor(private readonly cluster: Cluster) {}
+@Injectable()
+export class IndexBootstrapService implements OnApplicationBootstrap {
+  constructor(private readonly discovery: DiscoveryService) {}
 
-//   async onModuleInit() {
-//     await this.createUniqueIndexes()
-//   }
-
-//   private async createUniqueIndexes() {
-//     const indexes = getAllUniqueIndexes()
-
-//     for (const idx of indexes) {
-//       const fieldList = idx.fields.map((f) => `\`${f}\``).join(", ")
-//       const caseSensitive = idx.caseSensitive ? "" : " COLLATE UTF8_UNICODE_CI"
-
-//       const query = `
-//         CREATE UNIQUE INDEX IF NOT EXISTS \`${idx.indexName}\`
-//         ON \`${idx.collection}\`(${fieldList})${caseSensitive}
-//         WHERE deletedAt IS NULL
-//       `
-
-//       try {
-//         await this.cluster.query(query)
-//         console.log(`Unique index created: ${idx.indexName}`)
-//       } catch (err: any) {
-//         if (!err.message.includes("already exists")) {
-//           console.warn(`Failed to create index ${idx.indexName}:`, err.message)
-//         }
-//       }
-//     }
-
-//     for (const idx of indexes) {
-//       await this.cluster.query(
-//         `BUILD INDEX ON \`${idx.collection}\`(\`${idx.indexName}\`)`,
-//       )
-//     }
-//   }
-// }
+  async onApplicationBootstrap() {
+    await createAllUniqueIndexes()
+  }
+}
