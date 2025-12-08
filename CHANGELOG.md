@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.4.0...v1.5.0) (2025-12-08)
+
+
+### Features
+
+* split actual test ([16bdc4a](https://github.com/theycantrevealus/nestjs-couchbase/commit/16bdc4af42bd7420deffda636f4ef8690376afb4))
+
 # [1.4.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.3.0...v1.4.0) (2025-12-07)
 
 
