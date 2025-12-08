@@ -26,7 +26,7 @@ import {
 } from "./interface"
 import { RELATIONS_KEY, SCHEMA_KEY } from "./constant"
 import { randomUUID } from "crypto"
-import { ModelRegistry } from "./util"
+import { getKeyField, ModelRegistry } from "./util"
 
 export class CouchBaseModel<T> {
   private readonly bucketName: string
@@ -125,33 +125,44 @@ export class CouchBaseModel<T> {
     data: Partial<T>,
     tx?: TransactionAttemptContext,
   ): Promise<T & { id: string }> {
-    try {
-      const instance = plainToInstance(this.schemaClass, data)
-      const errors = await validate(instance as any)
-      if (errors.length > 0) {
+    const instance = plainToInstance(this.schemaClass, data)
+    const errors = await validate(instance as any)
+    if (errors.length > 0) {
+      throw new BadRequestException(
+        errors.map((e) => Object.values(e.constraints || {})).flat(),
+      )
+    }
+
+    const opts = this.getSchemaOptions()
+    const ts = opts.timestamps
+    const now = new Date()
+
+    if (ts.createdAt !== false) (instance as any)[ts.createdAt] = now
+    if (ts.updatedAt !== false) (instance as any)[ts.updatedAt] = now
+    if (ts.deletedAt !== false) (instance as any)[ts.deletedAt] = null
+
+    let id: string
+
+    const keyField = getKeyField(this.schemaClass)
+    if (keyField) {
+      const value = (instance as any)[keyField.propertyKey]
+      if (!value) {
         throw new BadRequestException(
-          errors.map((e) => Object.values(e.constraints || {})).flat(),
+          `Key field ${keyField.propertyKey} is required`,
         )
       }
-
-      const opts = this.getSchemaOptions()
-      const ts = opts.timestamps
-      const now = new Date()
-
-      if (ts.createdAt !== false) (instance as any)[ts.createdAt] = now
-      if (ts.updatedAt !== false) (instance as any)[ts.updatedAt] = now
-      if (ts.deletedAt !== false) (instance as any)[ts.deletedAt] = null
-
-      const id = await this.generateId()
-      const content = instanceToPlain(instance)
-
-      if (tx) await tx.insert(this.collection, id, content)
-      else await this.collection.insert(id, content)
-
-      return { ...instance, id } as T & { id: string }
-    } catch (e) {
-      console.error(e)
+      const prefix = keyField.options?.prefix || ""
+      const separator = keyField.options?.separator || "::"
+      id = `${prefix}${value}`
+    } else {
+      id = await this.generateId()
     }
+    const content = instanceToPlain(instance)
+
+    if (tx) await tx.insert(this.collection, id, content)
+    else await this.collection.insert(id, content)
+
+    return { ...instance, id } as T & { id: string }
   }
 
   async get(
@@ -200,7 +211,8 @@ export class CouchBaseModel<T> {
       (instance as any)[ts.createdAt] = (current as any)[ts.createdAt]
 
     const content = instanceToPlain(instance)
-    const doc: TransactionGetResult = await tx.get(this.collection, id)
+    let doc: TransactionGetResult
+    if (tx) doc = await tx.get(this.collection, id)
 
     if (tx) await tx.replace(doc, id, content)
     else await this.collection.replace(id, content)
@@ -227,14 +239,15 @@ export class CouchBaseModel<T> {
     if (ts.deletedAt)
       if (tx) await this.update(id, { [ts.deletedAt]: new Date() } as any, tx)
       else
-        await this.collection.replace(id, { [ts.deletedAt]: new Date() } as any)
+        // await this.collection.replace(id, { [ts.deletedAt]: new Date() } as any)
+        await this.update(id, { [ts.deletedAt]: new Date() } as any)
   }
 
   private buildBaseQuery(where: Record<string, any> = {}): {
     statement: string
     params: Record<string, any>
   } {
-    let statement = `SELECT META().id as id, ${this.collectionName}.* FROM \`${this.scopeName}\`.\`${this.bucketName}\`.\`${this.collectionName}\``
+    let statement = `SELECT META().id as id, ${this.collectionName}.* FROM \`${this.bucketName}\`.\`${this.scopeName}\`.\`${this.collectionName}\``
     const params: Record<string, any> = {}
     const conditions: string[] = []
 
@@ -255,8 +268,12 @@ export class CouchBaseModel<T> {
           params[paramName] = value.$ne
         }
       } else {
-        conditions.push(`${key} = ${paramName}`)
-        params[paramName] = value
+        if (key === "deletedAt") {
+          conditions.push(`${key} IS NULL`)
+        } else {
+          conditions.push(`${key} = ${paramName}`)
+          params[paramName] = value
+        }
       }
     })
 
@@ -264,7 +281,10 @@ export class CouchBaseModel<T> {
       statement += ` WHERE ${conditions.join(" AND ")}`
     }
 
-    return { statement, params }
+    return {
+      statement,
+      params,
+    }
   }
 
   async find(
@@ -274,11 +294,13 @@ export class CouchBaseModel<T> {
       skip?: number
       sort?: Record<string, 1 | -1>
     } = {},
+    includeSoft: boolean = false,
   ): Promise<(T & { id: string })[]> {
     const opts = this.getSchemaOptions()
-    if (opts.timestamps.deletedAt !== false) {
-      filter = { ...filter, [opts.timestamps.deletedAt]: null }
-    }
+    if (!includeSoft)
+      if (opts.timestamps.deletedAt !== false) {
+        filter = { ...filter, [opts.timestamps.deletedAt]: null }
+      }
 
     let { statement, params } = this.buildBaseQuery(filter)
 
@@ -292,16 +314,17 @@ export class CouchBaseModel<T> {
     if (options.limit) statement += ` LIMIT $limit`
     if (options.skip) statement += ` OFFSET $skip`
 
-    const queryOptions: QueryOptionsExt = {
-      namedParameters: { ...params },
+    const queryOptions = {
+      parameters: { ...params },
     }
-    if (options.limit) queryOptions.namedParameters!.$limit = options.limit
-    if (options.skip) queryOptions.namedParameters!.$skip = options.skip
+    if (options.limit) queryOptions.parameters!.$limit = options.limit
+    if (options.skip) queryOptions.parameters!.$skip = options.skip
 
     const result = await this.cluster.query(statement, queryOptions)
 
     return result.rows.map((row) =>
-      this.hydrate(row[this.collectionName], row.id),
+      // this.hydrate(row[this.collectionName], row.id),
+      this.hydrate(row, row.id),
     )
   }
 

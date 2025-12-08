@@ -30,6 +30,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest --detectOpenHandles --forceExit --verbose --runInBand --coverage --no-cache --passWithNoTests --config ./src/test/jest.e2e.json",
+    "test:actual": "jest --detectOpenHandles --forceExit --verbose --runInBand --coverage --no-cache --passWithNoTests --config ./src/test/jest.actual.e2e.json",
     "prepack": "npm run build",
     "prepare": "husky",
     "release": "semantic-release"

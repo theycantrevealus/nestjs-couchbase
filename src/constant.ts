@@ -2,6 +2,7 @@ export const COUCHBASE_OPTIONS = "COUCHBASE_OPTIONS"
 export const COUCHBASE_CLUSTER = "COUCHBASE_CLUSTER"
 export const COUCHBASE_BUCKET = "COUCHBASE_BUCKET"
 export const SCHEMA_KEY = Symbol("couchbase:schema")
+export const KEY_METADATA = Symbol("couchbase:key")
 export const SCHEMA_REGISTRY = new Map<Function, any>()
 export const PROP_METADATA_KEY = "couchbase:props"
 export const PROP_UNIQUE_INDEXES_KEY = "couchbase:unique_indexes"

@@ -24,10 +24,10 @@ export class BreedService {
   }
 
   async create(data: CreateBreedDto) {
-    try {
-      return await this.breedModel.create(data)
-    } catch (e) {
-      console.error(e)
-    }
+    return this.breedModel.create(data)
+  }
+
+  async clearAllBreed() {
+    await this.breedModel.deleteMany({})
   }
 }

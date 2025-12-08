@@ -1,5 +1,5 @@
 import { Prop, Schema } from "../../decorator"
-import { Unique } from "../../util"
+import { Key, Unique } from "../../util"
 
 @Schema({
   collection: "breed",
@@ -12,6 +12,7 @@ import { Unique } from "../../util"
 // @Unique(["name"], { scope: "_default", name: "idx_testing_for_breed_name" })
 export class Breed {
   @Prop({ required: true })
+  @Key({ prefix: "breed_name::" })
   name: string
 
   @Prop({ required: false, default: "-" })

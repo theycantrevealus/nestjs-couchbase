@@ -1,5 +1,6 @@
 import { Type } from "class-transformer"
 import {
+  KEY_METADATA,
   PENDING_UNIQUE_INDEXES,
   PROP_UNIQUE_INDEXES_KEY,
   RELATIONS_KEY,
@@ -7,6 +8,7 @@ import {
   SCHEMA_REGISTRY,
 } from "./constant"
 import {
+  KeyOptions,
   RelationOptions,
   SchemaOptions,
   TimestampOptions,
@@ -126,6 +128,22 @@ export function getNestedPath(
   }
 
   return pathParts.join(".")
+}
+
+export function getKeyField(
+  klass: Function,
+): { propertyKey: string; options: KeyOptions } | null {
+  return Reflect.getMetadata(KEY_METADATA, klass) || null
+}
+
+export function Key(options: KeyOptions = {}) {
+  return (target: any, propertyKey: string) => {
+    Reflect.defineMetadata(
+      KEY_METADATA,
+      { propertyKey, ...options },
+      target.constructor,
+    )
+  }
 }
 
 // export function Unique(fields: string | string[], options?: { name?: string }) {

@@ -49,6 +49,11 @@ export interface PropOptions {
   transform?: (value: any) => any
 }
 
+export interface KeyOptions {
+  prefix?: string
+  separator?: string
+}
+
 export interface UniqueIndexMetadata {
   collection: string
   scope: string
