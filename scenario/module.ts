@@ -1,12 +1,10 @@
 import { Module } from "@nestjs/common"
-import { CatService } from "./services/service.cat"
-import { OwnerService } from "./services/service.owner"
-import { CouchBaseModule } from "../module"
 import { ConfigModule, ConfigService } from "@nestjs/config"
 import { BreedService } from "./services/service.breed"
 import { Breed } from "./schema/breed"
 import { Cat } from "./schema/cat"
 import { Owner } from "./schema/owner"
+import { CouchBaseModule } from "../src"
 
 @Module({
   imports: [

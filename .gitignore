@@ -8,4 +8,6 @@ dist/
 *.log
 *.tsbuildinfo
 .env
-src/test/coverage/
+coverage
+src/coverage/
+scenario/coverage/

@@ -104,7 +104,7 @@ export function Prop(options: PropOptions = {}) {
     //   }
 
     //   const collection = schemaOpts.collection
-    //   const fullPath = getNestedPath(target, propertyKey, currentClass.name) // ← use .name
+    //   const fullPath = getNestedPath(target, propertyKey, currentClass.name)
 
     //   const indexName =
     //     typeof options.unique === "object" && options.unique.name

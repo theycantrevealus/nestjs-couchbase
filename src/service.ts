@@ -22,10 +22,8 @@ export class CouchBaseService
   }
 
   async onApplicationShutdown() {
-    console.log("Closing Couchbase cluster...")
     try {
       await this.cluster.close()
-      console.log("Couchbase cluster closed gracefully")
     } catch (error) {
       console.error("Error closing Couchbase cluster:", error)
     }

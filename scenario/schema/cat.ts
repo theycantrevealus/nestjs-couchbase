@@ -1,4 +1,4 @@
-import { BelongsTo, HasOne, Prop, Schema } from "../../decorator"
+import { BelongsTo, HasOne, Prop, Schema } from "../../src"
 import { Status } from "../enum"
 import { Breed } from "./breed"
 import { Owner } from "./owner"

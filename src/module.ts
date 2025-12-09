@@ -152,6 +152,9 @@ export class CouchBaseModule {
           schemaClass,
           service.getCluster(),
           collectionName,
+          bucket,
+          scope,
+          options,
         )
         ModelRegistry.register(schemaClass.name, model)
         return model

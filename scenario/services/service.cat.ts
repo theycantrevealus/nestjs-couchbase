@@ -1,8 +1,7 @@
 import { Injectable } from "@nestjs/common"
-import { CouchBaseModel } from "../../model"
 import { CreateCatDto, UpdateCatDto } from "../dto"
-import { InjectModel } from "../../decorator"
 import { Cat } from "../schema/cat"
+import { CouchBaseModel, InjectModel } from "../../src"
 
 @Injectable()
 export class CatService {

@@ -3,10 +3,10 @@
   "exclude": [
     "node_modules",
     "dist",
+    "scenario",
     "test",
     "**/*.spec.ts",
-    "**/*.test.ts",
-    "src/test"
+    "**/*.test.ts"
   ],
   "include": ["src/**/*"],
   "compilerOptions": {

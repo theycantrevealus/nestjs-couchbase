@@ -1,8 +1,7 @@
 import { Injectable } from "@nestjs/common"
-import { InjectModel } from "../../decorator"
-import { CouchBaseModel } from "../../model"
 import { CreateBreedDto } from "../dto"
 import { Breed } from "../schema/breed"
+import { CouchBaseModel, InjectModel } from "../../src"
 
 @Injectable()
 export class BreedService {

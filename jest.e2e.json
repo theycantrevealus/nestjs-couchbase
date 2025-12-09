@@ -1,0 +1,27 @@
+{
+  "slowTestThreshold": 300,
+  "modulePaths": ["<rootDir>"],
+  "moduleDirectories": ["node_modules"],
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "roots": ["<rootDir>/test/"],
+  "testEnvironment": "node",
+  "testRegex": "spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "transformIgnorePatterns": ["<rootDir>/node_modules/", "<rootDir>/dist/"],
+  "collectCoverage": true,
+  "collectCoverageFrom": [
+    "<rootDir>/src/**/*.{js,jsx,ts,tsx}",
+    "!<rootDir>/node_modules/",
+    "!<rootDir>/**/*.mock.{js,jsx,ts,tsx}"
+  ],
+  "coverageThreshold": {
+    "global": {
+      "lines": 90,
+      "statements": 90
+    }
+  },
+  "coverageDirectory": "./coverage"
+}

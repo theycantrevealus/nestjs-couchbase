@@ -1,5 +1,4 @@
-import { HasMany, Prop, Schema } from "../../decorator"
-import { Cat } from "./cat"
+import { Prop, Schema } from "../../src"
 
 export class OwnerContact {
   @Prop({

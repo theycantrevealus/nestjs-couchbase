@@ -10,12 +10,11 @@
     "target": "es2017",
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "noLib": false,
     "noImplicitAny": false,
     "skipLibCheck": true,
     "incremental": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "test/**/*.ts", "scenario/**/*.ts"],
   "exclude": ["node_modules"]
 }

@@ -1,17 +1,16 @@
 import { Test, TestingModule } from "@nestjs/testing"
 import { CreateBreedDto } from "./dto"
 import { ConfigModule, ConfigService } from "@nestjs/config"
-import { CouchBaseModule } from "../module"
 import { Breed } from "./schema/breed"
-import { CouchBaseModel } from "../model"
-import { getModelToken } from "../decorator"
 import { Cluster } from "couchbase"
-import { COUCHBASE_CLUSTER } from "../constant"
+import { CouchBaseModel, CouchBaseModule, getModelToken } from "../src"
+import { COUCHBASE_CLUSTER } from "../src/constant"
 
 describe("Couchbase actual test", () => {
   let moduleRef: TestingModule
   let breedModel: CouchBaseModel<Breed>
   let cluster: Cluster
+  let app
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
@@ -20,17 +19,18 @@ describe("Couchbase actual test", () => {
         CouchBaseModule.forRootAsync({
           imports: [ConfigModule],
           useFactory: async (configService: ConfigService) => ({
-            connectionString: configService.get("COUCHBASE_CONNECTION_STRING"),
-            username: configService.get("COUCHBASE_USERNAME"),
-            password: configService.get("COUCHBASE_PASSWORD"),
-            bucketName: configService.get("COUCHBASE_BUCKET"),
+            connectionString:
+              configService.get("COUCHBASE_CONNECTION_STRING") || "",
+            username: configService.get("COUCHBASE_USERNAME") || "",
+            password: configService.get("COUCHBASE_PASSWORD") || "",
+            bucketName: configService.get("COUCHBASE_BUCKET") || "",
           }),
           inject: [ConfigService],
         }),
         CouchBaseModule.forFeature([Breed]),
       ],
     }).compile()
-    const app = moduleRef.createNestApplication()
+    app = moduleRef.createNestApplication()
     await app.init()
     breedModel = moduleRef.get<CouchBaseModel<Breed>>(getModelToken(Breed.name))
     cluster = moduleRef.get<Cluster>(COUCHBASE_CLUSTER)
@@ -65,7 +65,7 @@ describe("Couchbase actual test", () => {
       try {
         await breedModel.create(testData)
         fail("Expected error was not thrown")
-      } catch (e) {
+      } catch (e: any) {
         expect(e.message).toContain("document exists")
       }
     })
@@ -79,7 +79,7 @@ describe("Couchbase actual test", () => {
 
       await breedModel.create(testData).then(async () => {
         const found = await breedModel.find(
-          { name: testData.name },
+          {},
           {
             skip: 0,
             limit: 10,
@@ -217,6 +217,6 @@ describe("Couchbase actual test", () => {
   })
 
   afterAll(async () => {
-    // await breedModel.query("DELETE FROM `testing`.`_default`.`breed`")
+    await breedModel.query("DELETE FROM `testing`.`_default`.`breed`")
   })
 })

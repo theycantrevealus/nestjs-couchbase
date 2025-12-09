@@ -11,6 +11,7 @@ import {
   QueryResult,
   TransactionGetResult,
   CollectionManager,
+  Bucket,
 } from "couchbase"
 import {
   plainToInstance,
@@ -38,15 +39,22 @@ export class CouchBaseModel<T> {
     private readonly schemaClass: ClassConstructor<T>,
     private readonly cluster: Cluster,
     collectionName: string,
+    private readonly bucket: Bucket,
+    scopeName: string,
+    private readonly options: any,
   ) {
-    this.bucketName = collection.scope.bucket.name
-    this.scopeName = collection.scope.name
+    this.bucketName = bucket.name
+    this.scopeName = scopeName
     this.collectionName = collectionName.toLowerCase()
     this.createCollectionsIfNotExist()
   }
 
+  get configuration(): any {
+    return this.options
+  }
+
   private async createCollectionsIfNotExist() {
-    const manager = this.collection.scope.bucket.collections()
+    const manager = this.bucket.collections()
     await this.ensureScopeAndCollection(
       manager,
       this.scopeName,
@@ -112,14 +120,6 @@ export class CouchBaseModel<T> {
       }
     )
   }
-
-  /**
-   *
-   *
-   *
-   *
-   *
-   */
 
   async create(
     data: Partial<T>,
