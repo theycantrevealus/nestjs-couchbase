@@ -181,8 +181,8 @@ export class CouchBaseModel<T> {
       const separator = keyField.options?.separator || "::"
       id = `${prefix}${value}`
     } else {
-      id = await this.generateId() // uuid
-      // id = this.generateMongoId() // mongoid-like
+      // id = await this.generateId() // uuid
+      id = this.generateMongoId() // mongoid-like
     }
     const content = instanceToPlain(instance)
 
