@@ -26,13 +26,15 @@ import {
   TimestampOptions,
 } from "./interface"
 import { RELATIONS_KEY, SCHEMA_KEY } from "./constant"
-import { randomUUID } from "crypto"
+import { randomUUID, randomBytes } from "crypto"
 import { getKeyField, ModelRegistry } from "./util"
 
 export class CouchBaseModel<T> {
   private readonly bucketName: string
   private readonly scopeName: string
   private readonly collectionName: string
+
+  private counter = Math.floor(Math.random() * 0xffffff);
 
   constructor(
     private readonly collection: Collection,
@@ -105,6 +107,30 @@ export class CouchBaseModel<T> {
     return randomUUID()
   }
 
+  private generateMongoId(): string {
+    const time = Math.floor(Date.now() / 1000);
+    const id = new Uint8Array(12);
+
+    // 4 bytes = timestamps (epoch)
+    id[0] = (time >>> 24) & 0xff;
+    id[1] = (time >>> 16) & 0xff;
+    id[2] = (time >>> 8) & 0xff;
+    id[3] = time & 0xff;
+
+    // 5 bytes = random unique key
+    id.set(randomBytes(5), 4);
+
+    this.counter = (this.counter + 1) % 0xffffff;
+
+    // 3 bytes = counter / incremental
+    id[9] = (this.counter >>> 16) & 0xff;
+    id[10] = (this.counter >>> 8) & 0xff;
+    id[11] = this.counter & 0xff;
+
+    // combine all bytes
+    return [...id].map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
   private getSchemaOptions(): Required<SchemaOptions> & {
     timestamps: TimestampOptions
   } {
@@ -155,7 +181,8 @@ export class CouchBaseModel<T> {
       const separator = keyField.options?.separator || "::"
       id = `${prefix}${value}`
     } else {
-      id = await this.generateId()
+      // id = await this.generateId() // uuid
+      id = this.generateMongoId() // mongoid-like
     }
     const content = instanceToPlain(instance)
 
