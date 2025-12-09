@@ -25,7 +25,7 @@ import {
   TimestampOptions,
 } from "./interface"
 import { RELATIONS_KEY, SCHEMA_KEY } from "./constant"
-import { randomUUID } from "crypto"
+import { randomUUID, randomBytes } from "crypto"
 import { getKeyField, ModelRegistry } from "./util"
 
 export class CouchBaseModel<T> {
@@ -110,7 +110,7 @@ export class CouchBaseModel<T> {
     id[3] = time & 0xff;
 
     // 5 bytes = random unique key
-    crypto.getRandomValues(id.subarray(4, 9));
+    id.set(randomBytes(5), 4);
 
     this.counter = (this.counter + 1) % 0xffffff;
 
