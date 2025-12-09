@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.5.0...v1.6.0) (2025-12-09)
+
+
+### Features
+
+* test with mocked couchbase library ([76bc002](https://github.com/theycantrevealus/nestjs-couchbase/commit/76bc002f120aa9007b7baac890c255ed6f083551))
+
 # [1.5.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.4.0...v1.5.0) (2025-12-08)
 
 
