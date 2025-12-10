@@ -20,9 +20,10 @@ import {
   COUCHBASE_CLUSTER,
   COUCHBASE_OPTIONS,
   SCHEMA_KEY,
+  SCHEMA_KEY_OPT,
 } from "./constant"
 import { CouchBaseModel } from "./model"
-import { createAllUniqueIndexes, ModelRegistry } from "./util"
+import { getSchemaOptions, ModelRegistry } from "./util"
 import { DiscoveryService } from "@nestjs/core"
 
 @Global()
@@ -56,7 +57,12 @@ export class CouchBaseModule {
     return {
       module: CouchBaseModule,
       providers,
-      exports: [COUCHBASE_CLUSTER, COUCHBASE_BUCKET, CouchBaseService],
+      exports: [
+        COUCHBASE_CLUSTER,
+        COUCHBASE_BUCKET,
+        CouchBaseService,
+        DiscoveryService,
+      ],
     }
   }
 
@@ -96,7 +102,12 @@ export class CouchBaseModule {
       global: true,
       imports: options.imports || [],
       providers,
-      exports: [COUCHBASE_CLUSTER, COUCHBASE_BUCKET, CouchBaseService],
+      exports: [
+        COUCHBASE_CLUSTER,
+        COUCHBASE_BUCKET,
+        CouchBaseService,
+        DiscoveryService,
+      ],
     }
   }
 
@@ -141,7 +152,10 @@ export class CouchBaseModule {
     const providers = schemaClasses.map((schemaClass) => ({
       provide: getModelToken(schemaClass.name),
       useFactory: (service: CouchBaseService) => {
-        const options = Reflect.getMetadata(SCHEMA_KEY, schemaClass) || {}
+        const options =
+          getSchemaOptions(schemaClass) ||
+          Reflect.getMetadata(SCHEMA_KEY_OPT, schemaClass) ||
+          {}
         const scope = options.scope || "_default"
         const collectionName =
           options.collection || schemaClass.name.toLowerCase()
