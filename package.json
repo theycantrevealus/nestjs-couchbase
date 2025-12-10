@@ -1,6 +1,6 @@
 {
   "name": "nestjs-couchbase",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Couchbase module for NestJS",
   "keywords": [
     "couchbase",

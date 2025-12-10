@@ -1,3 +1,18 @@
+# [1.7.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.6.0...v1.7.0) (2025-12-10)
+
+
+### Bug Fixes
+
+* exclude parameters on QueryOptionsExt so it could extend QueryOptions natively ([8c5ec9e](https://github.com/theycantrevealus/nestjs-couchbase/commit/8c5ec9ed3f02fce56f0242dc8db5c844674e8393))
+* export DiscoveryService for dep usage on import ([7a15ca3](https://github.com/theycantrevealus/nestjs-couchbase/commit/7a15ca382ab4d3fa5fb162a4b2079c9d37711f8d))
+* scenario update for latest fix ([9ae82d2](https://github.com/theycantrevealus/nestjs-couchbase/commit/9ae82d2b04ff8fe322b4152e6b965ce1275f2754))
+
+
+### Features
+
+* add subChildField to get nested model mapping using dot notation ([70ba252](https://github.com/theycantrevealus/nestjs-couchbase/commit/70ba252735729e074664c223e53b37b9a7bc4346))
+* model getter and query management ([2a9cc80](https://github.com/theycantrevealus/nestjs-couchbase/commit/2a9cc80721ed8451a65e70ad9ca09681ebea5eca))
+
 # [1.6.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.5.0...v1.6.0) (2025-12-09)
 
 
