@@ -1,0 +1,47 @@
+name: Feature Request
+description: Just think about something good to implement.
+title: "[Feature Request]: "
+labels: ["feature-request"]
+projects: ["theycantrevealus/3"]
+assignees:
+  - theycantrevealus
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tell us what feature you're thinking about, why you want it, and how it would help you.
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@example.com
+    validations:
+      required: false
+  - type: textarea
+    id: feature-remark
+    attributes:
+      label: How You Imagine It Working?
+      description: Please be clear and more specific
+      placeholder: Please provide a clear description of the requested feature, the use case it supports, and the benefits it would bring to your workflow. The more detail you provide, the better we can evaluate the request.
+      value: "I wonder if"
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: What category are you highlighting
+      multiple: true
+      options:
+        - Tech Stack
+        - Combat System
+        - Events
+        - Other
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com).
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
