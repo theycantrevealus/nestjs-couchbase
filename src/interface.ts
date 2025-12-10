@@ -26,7 +26,7 @@ export interface ICouchBaseAsyncOptions extends Pick<
 }
 
 export interface QueryOptionsExt extends QueryOptions {
-  parameters?: any[]
+  // parameters?: any[]
   namedParameters?: Record<string, any>
 }
 
