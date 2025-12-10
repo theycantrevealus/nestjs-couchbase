@@ -1,7 +1,6 @@
-# <center>nestjs-couchbase (NestJS x CouchBase)</center>
-
 <div align="center">
-
+<h1>nestjs-couchbase</h1>
+    
 [![License](https://img.shields.io/github/license/theycantrevealus/nestjs-couchbase?style=flat-square)](LICENSE)
 [![Semantic Release](https://img.shields.io/badge/release-semantic--release-blue?style=flat-square)](https://semantic-release.gitbook.io/)
 [![Commitlint](https://img.shields.io/badge/commitlint-enabled-brightgreen?style=flat-square)](https://commitlint.js.org/)
@@ -18,6 +17,9 @@
     <a href="https://github.com/theycantrevealus/nestjs-couchbase/issues">Request Feature</a>
   </p>
 </div>
+
+# <center>NestJS x CouchBase</center>
+
 A NestJS library to seamlessly integrate **[Couchbase](https://www.couchbase.com/)**, enabling developers to leverage the power of Couchbase with the modular architecture of NestJS.
 
 ## Table of Contents
