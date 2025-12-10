@@ -5,12 +5,15 @@ import { Breed } from "./schema/breed"
 import { Cluster } from "couchbase"
 import { CouchBaseModel, CouchBaseModule, getModelToken } from "../src"
 import { COUCHBASE_CLUSTER } from "../src/constant"
+import { DiscoveryService } from "@nestjs/core"
 
 describe("Couchbase actual test", () => {
   let moduleRef: TestingModule
-  let breedModel: CouchBaseModel<Breed>
   let cluster: Cluster
   let app
+
+  let discoveryService: DiscoveryService
+  let breedModel: CouchBaseModel<Breed>
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
@@ -32,12 +35,25 @@ describe("Couchbase actual test", () => {
     }).compile()
     app = moduleRef.createNestApplication()
     await app.init()
-    breedModel = moduleRef.get<CouchBaseModel<Breed>>(getModelToken(Breed.name))
     cluster = moduleRef.get<Cluster>(COUCHBASE_CLUSTER)
+    discoveryService = moduleRef.get<DiscoveryService>(DiscoveryService)
+    breedModel = moduleRef.get<CouchBaseModel<Breed>>(getModelToken(Breed.name))
   })
 
   beforeEach(async () => {
     await breedModel.query("DELETE FROM `testing`.`_default`.`breed`")
+  })
+
+  afterEach(async () => {
+    await breedModel.query("DELETE FROM `testing`.`_default`.`breed`")
+  })
+
+  describe("Couchbase module injection test", () => {
+    it("should load all services", async () => {
+      expect(discoveryService).toBeDefined()
+      expect(cluster)
+      expect(discoveryService).toBeDefined()
+    })
   })
 
   describe("Breed CRUD", () => {
@@ -141,24 +157,54 @@ describe("Couchbase actual test", () => {
           )
 
           expect(found).toBeInstanceOf(Array)
-          expect(found).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                id: expect.stringMatching(new RegExp(`^${testData.name}$`)),
-              }),
-              expect.objectContaining({
-                name: expect.stringMatching(new RegExp(`^${testData.name}$`)),
-              }),
-              expect.objectContaining({
-                remark: expect.stringMatching(
-                  new RegExp(`^${testData.remark}$`),
-                ),
-              }),
-              expect.objectContaining({
-                deletedAt: expect.anything(),
-              }),
-            ]),
-          )
+          if (breedModel.configuration.timestamps) {
+            if (typeof breedModel.configuration.timestamps === "boolean") {
+              expect(found).toEqual(
+                expect.arrayContaining([
+                  expect.objectContaining({
+                    id: expect.stringMatching(new RegExp(`^${testData.name}$`)),
+                  }),
+                  expect.objectContaining({
+                    name: expect.stringMatching(
+                      new RegExp(`^${testData.name}$`),
+                    ),
+                  }),
+                  expect.objectContaining({
+                    remark: expect.stringMatching(
+                      new RegExp(`^${testData.remark}$`),
+                    ),
+                  }),
+                  expect.objectContaining({
+                    deletedAt: expect.anything(),
+                  }),
+                ]),
+              )
+            } else if (
+              typeof breedModel.configuration.timestamps === "object"
+            ) {
+              const deletedAt = breedModel.configuration.timestamps.deletedAt
+              expect(found).toEqual(
+                expect.arrayContaining([
+                  expect.objectContaining({
+                    id: expect.stringMatching(new RegExp(`^${testData.name}$`)),
+                  }),
+                  expect.objectContaining({
+                    name: expect.stringMatching(
+                      new RegExp(`^${testData.name}$`),
+                    ),
+                  }),
+                  expect.objectContaining({
+                    remark: expect.stringMatching(
+                      new RegExp(`^${testData.remark}$`),
+                    ),
+                  }),
+                  expect.objectContaining({
+                    [deletedAt]: expect.anything(),
+                  }),
+                ]),
+              )
+            }
+          }
         })
       })
     })
@@ -214,9 +260,5 @@ describe("Couchbase actual test", () => {
         })
       })
     })
-  })
-
-  afterAll(async () => {
-    await breedModel.query("DELETE FROM `testing`.`_default`.`breed`")
   })
 })

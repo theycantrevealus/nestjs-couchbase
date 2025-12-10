@@ -2,8 +2,16 @@ import { Test } from "@nestjs/testing"
 import { Bucket, Cluster } from "couchbase"
 
 import { Breed, BreedNoKey } from "./model/breed"
-import { CouchBaseModel, CouchBaseModule, getModelToken } from "../src"
+import {
+  CouchBaseModel,
+  CouchBaseModule,
+  getModelToken,
+  PropOptions,
+} from "../src"
 import { CouchBaseService } from "../src/service"
+import { Owner } from "./model/owner"
+import { PROP_METADATA_KEY } from "../src/constant"
+import { getSchemaOptions, subChildField } from "../src/util"
 
 jest.mock("couchbase", () => {
   const mockManager = {
@@ -68,9 +76,10 @@ describe("CouchbaseModule (Dynamic)", () => {
   let service: CouchBaseService
   let breedModel: CouchBaseModel<Breed>
   let breedNoKeyModel: CouchBaseModel<BreedNoKey>
+  let ownerModel: CouchBaseModel<Owner>
   let app
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const module = await Test.createTestingModule({
       imports: [
         CouchBaseModule.forRootAsync({
@@ -81,7 +90,7 @@ describe("CouchbaseModule (Dynamic)", () => {
             bucketName: "test",
           }),
         }),
-        CouchBaseModule.forFeature([Breed, BreedNoKey]),
+        CouchBaseModule.forFeature([Breed, BreedNoKey, Owner]),
       ],
     }).compile()
 
@@ -95,6 +104,7 @@ describe("CouchbaseModule (Dynamic)", () => {
     breedNoKeyModel = module.get<CouchBaseModel<BreedNoKey>>(
       getModelToken(BreedNoKey.name),
     )
+    ownerModel = module.get<CouchBaseModel<Owner>>(getModelToken(Owner.name))
   })
 
   it("should connect and provide cluster/bucket", () => {
@@ -133,6 +143,7 @@ describe("CouchbaseModule (Dynamic)", () => {
       name: "Test",
       remark: "-",
     })
+
     if (breedModel.configuration.timestamps) {
       if (typeof breedModel.configuration.timestamps === "boolean") {
         expect(breed).toHaveProperty("createdAt")
@@ -144,6 +155,37 @@ describe("CouchbaseModule (Dynamic)", () => {
         }
       }
     }
+  })
+
+  it("should apply for transform prop", async () => {
+    const testData = {
+      name: "John",
+      username: "johnhere",
+      contact: {
+        phone: "+6285261510202",
+        email: "john@example.com",
+      },
+    }
+
+    const processData = await ownerModel.create(testData)
+    const props: {
+      property: string
+      options: PropOptions
+    }[] = Reflect.getMetadata(PROP_METADATA_KEY, ownerModel.targetSchemaClass)
+
+    subChildField(testData).forEach((field) => {
+      const found = props.filter(
+        (configured) =>
+          configured.property === field && configured.options.transform,
+      )
+      if (found.length > 0) {
+        found.forEach((testItem) => {
+          expect(processData[testItem.property]).toBe(
+            testItem.options.transform(testData[testItem.property]),
+          )
+        })
+      }
+    })
   })
 
   it("should close cluster on shutdown", async () => {
