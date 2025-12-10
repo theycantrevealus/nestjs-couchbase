@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  NotFoundException,
-  OnModuleInit,
-} from "@nestjs/common"
+import { BadRequestException } from "@nestjs/common"
 import {
   Collection,
   Cluster,
@@ -25,9 +21,9 @@ import {
   SchemaOptions,
   TimestampOptions,
 } from "./interface"
-import { RELATIONS_KEY, SCHEMA_KEY } from "./constant"
+import { RELATIONS_KEY, SCHEMA_KEY_OPT } from "./constant"
 import { randomUUID } from "crypto"
-import { getKeyField, ModelRegistry } from "./util"
+import { getKeyField, getSchemaOptions, ModelRegistry } from "./util"
 
 export class CouchBaseModel<T> {
   private readonly bucketName: string
@@ -51,6 +47,10 @@ export class CouchBaseModel<T> {
 
   get configuration(): any {
     return this.options
+  }
+
+  get targetSchemaClass(): ClassConstructor<T> {
+    return this.schemaClass
   }
 
   private async createCollectionsIfNotExist() {
@@ -109,7 +109,8 @@ export class CouchBaseModel<T> {
     timestamps: TimestampOptions
   } {
     return (
-      Reflect.getMetadata(SCHEMA_KEY, this.schemaClass) || {
+      getSchemaOptions(this.schemaClass) ||
+      Reflect.getMetadata(SCHEMA_KEY_OPT, this.schemaClass) || {
         scope: "_default",
         collection: this.schemaClass.name.toLowerCase(),
         timestamps: {
@@ -268,17 +269,22 @@ export class CouchBaseModel<T> {
           params[paramName] = value.$ne
         }
       } else {
-        if (key === "deletedAt") {
-          conditions.push(`${key} IS NULL`)
-        } else {
-          conditions.push(`${key} = ${paramName}`)
-          params[paramName] = value
-        }
+        conditions.push(`${key} = ${paramName}`)
+        params[paramName] = value
       }
     })
 
     if (conditions.length > 0) {
       statement += ` WHERE ${conditions.join(" AND ")}`
+    }
+
+    for (const [key, value] of Object.entries(params)) {
+      if (value === null) {
+        const regex = new RegExp(`=\\s*\\${key}\\b`, "g")
+        statement = statement.replace(regex, "IS NULL")
+
+        delete params[key]
+      }
     }
 
     return {
