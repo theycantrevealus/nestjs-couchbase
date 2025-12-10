@@ -5,6 +5,7 @@ import {
   PROP_UNIQUE_INDEXES_KEY,
   RELATIONS_KEY,
   SCHEMA_KEY,
+  SCHEMA_KEY_OPT,
   SCHEMA_REGISTRY,
 } from "./constant"
 import {
@@ -199,6 +200,26 @@ export async function createAllUniqueIndexes() {
   }
 
   PENDING_UNIQUE_INDEXES.length = 0
+}
+
+export function subChildField(obj, prefix = "") {
+  let paths = []
+
+  for (const key of Object.keys(obj)) {
+    const path = prefix ? `${prefix}.${key}` : key
+
+    paths.push(path)
+
+    if (
+      typeof obj[key] === "object" &&
+      obj[key] !== null &&
+      !Array.isArray(obj[key])
+    ) {
+      paths = paths.concat(subChildField(obj[key], path))
+    }
+  }
+
+  return paths
 }
 
 export function getSchemaOptions(klass: Function): any {
