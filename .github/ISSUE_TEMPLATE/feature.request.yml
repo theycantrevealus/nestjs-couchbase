@@ -2,7 +2,7 @@ name: Feature Request
 description: Just think about something good to implement.
 title: "[Feature Request]: "
 labels: ["feature-request"]
-projects: ["theycantrevealus/3"]
+projects: ["theycantrevealus/4"]
 assignees:
   - theycantrevealus
 body:
