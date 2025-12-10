@@ -13,7 +13,12 @@ import {
   registerDecorator,
 } from "class-validator"
 import "reflect-metadata"
-import { PROP_METADATA_KEY, SCHEMA_KEY, SCHEMA_REGISTRY } from "./constant"
+import {
+  PROP_METADATA_KEY,
+  SCHEMA_KEY,
+  SCHEMA_KEY_OPT,
+  SCHEMA_REGISTRY,
+} from "./constant"
 import { PropOptions, SchemaOptions, TimestampOptions } from "./interface"
 import {
   addUniqueIndex,
@@ -37,12 +42,13 @@ export function Schema(options: SchemaOptions = {}) {
       timestamps: resolveTimestamps(options.timestamps),
     }
 
+    /**Traditional: It's not using Symbol notation that could confuse mapping name */
+    // Reflect.defineMetadata(SCHEMA_KEY_OPT, finalOptions, target)
+
     ;(target as any)[SCHEMA_KEY] = finalOptions
     target.prototype[SCHEMA_KEY] = finalOptions
     SCHEMA_REGISTRY.set(target, finalOptions)
     target.prototype.__schema__ = finalOptions
-
-    // Reflect.defineMetadata(SCHEMA_KEY, finalOptions, target)
 
     const fields = getTimestampFields(finalOptions.timestamps)
     fields.forEach((field) => {
@@ -186,12 +192,21 @@ export function Prop(options: PropOptions = {}) {
       decorators.push(IsOptional())
     }
 
-    const props: string[] =
+    const props: any[] =
       Reflect.getMetadata(PROP_METADATA_KEY, target.constructor) || []
-    if (!props.includes(propertyKey)) {
-      props.push(propertyKey)
+
+    if (props.filter((a) => a.property !== propertyKey)) {
+      props.push({
+        property: propertyKey,
+        options: options,
+      })
+
       Reflect.defineMetadata(PROP_METADATA_KEY, props, target.constructor)
     }
+    // if (!props.includes(propertyKey)) {
+    //   props.push(propertyKey)
+    //   Reflect.defineMetadata(PROP_METADATA_KEY, props, target.constructor)
+    // }
 
     return applyDecorators(...decorators)(target, propertyKey)
   }
