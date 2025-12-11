@@ -230,6 +230,23 @@ describe("CouchbaseModule (Dynamic)", () => {
         await ownerModel.create(testData)
       }).rejects.toThrow()
     })
+
+    it("{ validate } should validate the primitive object value", async () => {
+      const testData = {
+        name: "John",
+        username: "johnhere",
+        attr: {
+          val_one: "qwerty",
+          val_two: "asdfgh"
+        },
+      }
+
+      const createProcess = await ownerModel.create(testData)
+      expect(createProcess).toHaveProperty("name")
+      expect(createProcess).toHaveProperty("username")
+      expect(createProcess).toHaveProperty("attr.val_one")
+      expect(createProcess).toHaveProperty("attr.val_two")
+    })
   })
 
   describe("Positive", () => {

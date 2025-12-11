@@ -72,4 +72,8 @@ export class Owner {
   @ValidateNested({ each: false })
   @Prop({ type: () => OwnerContact, required: false })
   contact?: OwnerContact
+
+  @Type(() => Object)
+  @Prop({ required: false, default: {} })
+  attr?: Object
 }

@@ -144,6 +144,7 @@ export function Prop(options: PropOptions = {}) {
       })(target, propertyKey)
     }
 
+    /*
     if (type === Object || type === Array) {
       ClassType(typeFn)(target, propertyKey)
       if (type === Array) {
@@ -155,6 +156,19 @@ export function Prop(options: PropOptions = {}) {
         decorators.push(IsObject())
         decorators.push(ValidateNested())
       }
+    }*/
+
+    if (type === Array) {
+      decorators.push(IsArray())
+      if (options.each !== false) {
+        decorators.push(ValidateNested({ each: true }))
+      }
+
+      if (options.type) {
+        ClassType(typeFn)(target, propertyKey)
+      }
+    } else if (type === Object) {
+      decorators.push(IsObject())
     } else {
       if (type === String) decorators.push(IsString())
       else if (type === Number) decorators.push(IsNumber())
