@@ -11,25 +11,33 @@ import {
   IsOptional,
   IsEnum,
   registerDecorator,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+  ValidationArguments,
 } from "class-validator"
 import "reflect-metadata"
-import {
-  PROP_METADATA_KEY,
-  SCHEMA_KEY,
-  SCHEMA_KEY_OPT,
-  SCHEMA_REGISTRY,
-} from "./constant"
+import { PROP_METADATA_KEY, SCHEMA_KEY, SCHEMA_REGISTRY } from "./constant"
 import { PropOptions, SchemaOptions, TimestampOptions } from "./interface"
 import {
-  addUniqueIndex,
   createRelationDecorator,
-  getNestedPath,
-  getSchemaOptions,
   getTimestampFields,
   resolveTimestamps,
   toCollectionName,
 } from "./util"
 import { Type as ClassType, Transform } from "class-transformer"
+
+@ValidatorConstraint({ name: "customPropValidator", async: false })
+export class CustomPropValidator implements ValidatorConstraintInterface {
+  validate(value: any, args: ValidationArguments) {
+    const validateFn = args.constraints[0] as (v: any) => boolean
+    return validateFn(value)
+  }
+
+  defaultMessage(args: ValidationArguments) {
+    const message = args.constraints[1] as string | undefined
+    return message || `${args.property} failed validation`
+  }
+}
 
 export function Schema(options: SchemaOptions = {}) {
   return (target: any) => {
@@ -171,18 +179,13 @@ export function Prop(options: PropOptions = {}) {
     }
 
     if (options.validate) {
+      ValidatorConstraint({ name: "customPropValidator" })(CustomPropValidator)
       registerDecorator({
-        name: "customPropValidator",
         target: target.constructor,
         propertyName: propertyKey,
-        options: {
-          message: options.validateMessage || `${propertyKey} is invalid`,
-        },
-        validator: {
-          validate(value: any) {
-            return options.validate!(value)
-          },
-        },
+        options: { message: options.validateMessage },
+        validator: CustomPropValidator,
+        constraints: [options.validate, options.validateMessage],
       })
     }
 
