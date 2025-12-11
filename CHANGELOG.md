@@ -1,3 +1,11 @@
+## [1.7.1](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.7.0...v1.7.1) (2025-12-11)
+
+
+### Bug Fixes
+
+* primitive object validator ([b62780b](https://github.com/theycantrevealus/nestjs-couchbase/commit/b62780b3b387d6b6028e109db342e86669114f49))
+* validation for field with subclass support ([4ad2b94](https://github.com/theycantrevealus/nestjs-couchbase/commit/4ad2b94b71c408b05e02072e414620bd58fd1cf9))
+
 # [1.7.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.6.0...v1.7.0) (2025-12-10)
 
 
