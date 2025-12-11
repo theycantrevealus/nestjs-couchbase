@@ -11,11 +11,12 @@ body:
       value: |
         Thanks for taking the time to fill out this bug report!
   - type: input
-    id: contact
+    id: version
     attributes:
-      label: Contact Details
-      description: How can we get in touch with you if we need more info?
-      placeholder: ex. email@example.com
+      label: Version Target
+      description: Version used
+      placeholder: vx.x.x
+      value: "v"
     validations:
       required: false
   - type: textarea
