@@ -14,7 +14,7 @@ import {
   ClassConstructor,
   instanceToPlain,
 } from "class-transformer"
-import { validate, ValidationError } from "class-validator"
+import { validate } from "class-validator"
 import {
   QueryOptionsExt,
   RelationOptions,
@@ -128,11 +128,16 @@ export class CouchBaseModel<T> {
   ): Promise<T & { id: string }> {
     const instance = plainToInstance(this.schemaClass, data)
     const errors = await validate(instance as any)
+    const errorList = []
     if (errors.length > 0) {
-      throw new BadRequestException(
-        errors.map((e) => Object.values(e.constraints || {})).flat(),
-      )
+      errors.map((e) => {
+        errorList.push([
+          ...e.children.map((e) => Object.values(e.constraints || {})).flat(),
+        ])
+      })
     }
+
+    if (errorList.length > 0) throw new Error(errorList.join(","))
 
     const opts = this.getSchemaOptions()
     const ts = opts.timestamps
@@ -143,14 +148,11 @@ export class CouchBaseModel<T> {
     if (ts.deletedAt !== false) (instance as any)[ts.deletedAt] = null
 
     let id: string
-
     const keyField = getKeyField(this.schemaClass)
     if (keyField) {
       const value = (instance as any)[keyField.propertyKey]
       if (!value) {
-        throw new BadRequestException(
-          `Key field ${keyField.propertyKey} is required`,
-        )
+        throw new Error(`Key field ${keyField.propertyKey} is required`)
       }
       const prefix = keyField.options?.prefix || ""
       const separator = keyField.options?.separator || "::"

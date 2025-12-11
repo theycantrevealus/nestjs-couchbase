@@ -79,7 +79,7 @@ describe("CouchbaseModule (Dynamic)", () => {
   let ownerModel: CouchBaseModel<Owner>
   let app
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const module = await Test.createTestingModule({
       imports: [
         CouchBaseModule.forRootAsync({
@@ -107,89 +107,163 @@ describe("CouchbaseModule (Dynamic)", () => {
     ownerModel = module.get<CouchBaseModel<Owner>>(getModelToken(Owner.name))
   })
 
-  it("should connect and provide cluster/bucket", () => {
-    expect(service).toBeDefined()
-    expect(cluster).toBeDefined()
-    expect(bucket).toBeDefined()
+  afterEach(async () => {
+    await app.close()
   })
 
-  it("should inject models via forFeature", () => {
-    expect(breedModel).toBeDefined()
-  })
-
-  it("should create document with UUID when no @Key", async () => {
-    const breedNoKey = await breedNoKeyModel.create({
-      name: "Test",
-      remark: "-",
+  describe("Resource Management", () => {
+    it("should connect and provide cluster/bucket", () => {
+      expect(service).toBeDefined()
+      expect(cluster).toBeDefined()
+      expect(bucket).toBeDefined()
     })
 
-    expect(breedNoKey.id).toMatch(/^[0-9a-f]{8}-/)
-    expect(breedNoKey.name).toBe(breedNoKey.name)
-    expect(breedNoKey.remark).toBe(breedNoKey.remark)
-  })
-
-  it("should use @Key field as document ID", async () => {
-    const breed = await breedModel.create({
-      name: "Test",
-      remark: "-",
+    it("should inject models via forFeature", () => {
+      expect(breedModel).toBeDefined()
     })
 
-    expect(breed.id).toBe(breed.name)
-    expect(breed.remark).toBe(breed.remark)
-  })
+    it("should create document with UUID when no @Key", async () => {
+      const breedNoKey = await breedNoKeyModel.create({
+        name: "Test",
+        remark: "-",
+      })
 
-  it("should apply timestamps", async () => {
-    const breed = await breedModel.create({
-      name: "Test",
-      remark: "-",
+      expect(breedNoKey.id).toMatch(/^[0-9a-f]{8}-/)
+      expect(breedNoKey.name).toBe(breedNoKey.name)
+      expect(breedNoKey.remark).toBe(breedNoKey.remark)
     })
 
-    if (breedModel.configuration.timestamps) {
-      if (typeof breedModel.configuration.timestamps === "boolean") {
-        expect(breed).toHaveProperty("createdAt")
-        expect(breed).toHaveProperty("updatedAt")
-        expect(breed).toHaveProperty("deletedAt")
-      } else if (typeof breedModel.configuration.timestamps === "object") {
-        for (const a in breedModel.configuration.timestamps) {
-          expect(breed).toHaveProperty(breedModel.configuration.timestamps[a])
+    it("should use @Key field as document ID", async () => {
+      const breed = await breedModel.create({
+        name: "Test",
+        remark: "-",
+      })
+
+      expect(breed.id).toBe(breed.name)
+      expect(breed.remark).toBe(breed.remark)
+    })
+
+    it("should close cluster on shutdown", async () => {
+      await app.close()
+      expect(cluster.close).toHaveBeenCalled()
+    })
+  })
+
+  describe("Collection Property", () => {
+    // it("should avoid create unregistered field", async () => {
+    //   const testData = {
+    //     wrong: "value",
+    //     name: "Test",
+    //   }
+
+    //   const processData = await breedModel.create(testData)
+    //   console.log(processData)
+    // })
+
+    it("{ timestamp } should apply timestamps", async () => {
+      const breed = await breedModel.create({
+        name: "Test",
+        remark: "-",
+      })
+
+      if (breedModel.configuration.timestamps) {
+        if (typeof breedModel.configuration.timestamps === "boolean") {
+          expect(breed).toHaveProperty("createdAt")
+          expect(breed).toHaveProperty("updatedAt")
+          expect(breed).toHaveProperty("deletedAt")
+        } else if (typeof breedModel.configuration.timestamps === "object") {
+          for (const a in breedModel.configuration.timestamps) {
+            expect(breed).toHaveProperty(breedModel.configuration.timestamps[a])
+          }
         }
       }
-    }
-  })
+    })
 
-  it("should apply for transform prop", async () => {
-    const testData = {
-      name: "John",
-      username: "johnhere",
-      contact: {
-        phone: "+6285261510202",
-        email: "john@example.com",
-      },
-    }
-
-    const processData = await ownerModel.create(testData)
-    const props: {
-      property: string
-      options: PropOptions
-    }[] = Reflect.getMetadata(PROP_METADATA_KEY, ownerModel.targetSchemaClass)
-
-    subChildField(testData).forEach((field) => {
-      const found = props.filter(
-        (configured) =>
-          configured.property === field && configured.options.transform,
-      )
-      if (found.length > 0) {
-        found.forEach((testItem) => {
-          expect(processData[testItem.property]).toBe(
-            testItem.options.transform(testData[testItem.property]),
-          )
-        })
+    it("{ required } should ask for required field", async () => {
+      const testData = {
+        name: "",
       }
+
+      expect(async () => {
+        await breedModel.create(testData)
+      }).rejects.toThrow()
+    })
+
+    it("{ transform } should apply for transform prop", async () => {
+      const testData = {
+        name: "John",
+        username: "johnhere",
+      }
+
+      const processData = await ownerModel.create(testData)
+      const props: {
+        property: string
+        options: PropOptions
+      }[] = Reflect.getMetadata(PROP_METADATA_KEY, ownerModel.targetSchemaClass)
+
+      subChildField(testData).forEach((field) => {
+        const found = props.filter(
+          (configured) =>
+            configured.property === field && configured.options.transform,
+        )
+        if (found.length > 0) {
+          found.forEach((testItem) => {
+            expect(processData[testItem.property]).toBe(
+              testItem.options.transform(testData[testItem.property]),
+            )
+          })
+        }
+      })
+    })
+
+    it("{ validate } should validate the field value", async () => {
+      const testData = {
+        name: "John",
+        username: "johnhere",
+        contact: {
+          phone: "wrong_phone",
+          email: "wrong_email",
+        },
+      }
+
+      expect(async () => {
+        await ownerModel.create(testData)
+      }).rejects.toThrow()
+    })
+
+    it("{ validate } should validate the primitive object value", async () => {
+      const testData = {
+        name: "John",
+        username: "johnhere",
+        attr: {
+          val_one: "qwerty",
+          val_two: "asdfgh"
+        },
+      }
+
+      const createProcess = await ownerModel.create(testData)
+      expect(createProcess).toHaveProperty("name")
+      expect(createProcess).toHaveProperty("username")
+      expect(createProcess).toHaveProperty("attr.val_one")
+      expect(createProcess).toHaveProperty("attr.val_two")
     })
   })
 
-  it("should close cluster on shutdown", async () => {
-    await app.close()
-    expect(cluster.close).toHaveBeenCalled()
+  describe("Positive", () => {
+    it("Accept correct data", async () => {
+      const testData = {
+        name: "John",
+        username: "johnhere",
+        contact: {
+          phone: "+6285261510202",
+          email: "john@example.com",
+        },
+      }
+
+      const createProcess = await ownerModel.create(testData)
+      expect(createProcess).toHaveProperty("id")
+      expect(createProcess).toHaveProperty("name")
+      expect(createProcess).toHaveProperty("contact")
+    })
   })
 })

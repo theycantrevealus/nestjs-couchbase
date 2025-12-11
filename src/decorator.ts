@@ -11,25 +11,33 @@ import {
   IsOptional,
   IsEnum,
   registerDecorator,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+  ValidationArguments,
 } from "class-validator"
 import "reflect-metadata"
-import {
-  PROP_METADATA_KEY,
-  SCHEMA_KEY,
-  SCHEMA_KEY_OPT,
-  SCHEMA_REGISTRY,
-} from "./constant"
+import { PROP_METADATA_KEY, SCHEMA_KEY, SCHEMA_REGISTRY } from "./constant"
 import { PropOptions, SchemaOptions, TimestampOptions } from "./interface"
 import {
-  addUniqueIndex,
   createRelationDecorator,
-  getNestedPath,
-  getSchemaOptions,
   getTimestampFields,
   resolveTimestamps,
   toCollectionName,
 } from "./util"
 import { Type as ClassType, Transform } from "class-transformer"
+
+@ValidatorConstraint({ name: "customPropValidator", async: false })
+export class CustomPropValidator implements ValidatorConstraintInterface {
+  validate(value: any, args: ValidationArguments) {
+    const validateFn = args.constraints[0] as (v: any) => boolean
+    return validateFn(value)
+  }
+
+  defaultMessage(args: ValidationArguments) {
+    const message = args.constraints[1] as string | undefined
+    return message || `${args.property} failed validation`
+  }
+}
 
 export function Schema(options: SchemaOptions = {}) {
   return (target: any) => {
@@ -136,6 +144,7 @@ export function Prop(options: PropOptions = {}) {
       })(target, propertyKey)
     }
 
+    /*
     if (type === Object || type === Array) {
       ClassType(typeFn)(target, propertyKey)
       if (type === Array) {
@@ -147,6 +156,19 @@ export function Prop(options: PropOptions = {}) {
         decorators.push(IsObject())
         decorators.push(ValidateNested())
       }
+    }*/
+
+    if (type === Array) {
+      decorators.push(IsArray())
+      if (options.each !== false) {
+        decorators.push(ValidateNested({ each: true }))
+      }
+
+      if (options.type) {
+        ClassType(typeFn)(target, propertyKey)
+      }
+    } else if (type === Object) {
+      decorators.push(IsObject())
     } else {
       if (type === String) decorators.push(IsString())
       else if (type === Number) decorators.push(IsNumber())
@@ -171,18 +193,13 @@ export function Prop(options: PropOptions = {}) {
     }
 
     if (options.validate) {
+      ValidatorConstraint({ name: "customPropValidator" })(CustomPropValidator)
       registerDecorator({
-        name: "customPropValidator",
         target: target.constructor,
         propertyName: propertyKey,
-        options: {
-          message: options.validateMessage || `${propertyKey} is invalid`,
-        },
-        validator: {
-          validate(value: any) {
-            return options.validate!(value)
-          },
-        },
+        options: { message: options.validateMessage },
+        validator: CustomPropValidator,
+        constraints: [options.validate, options.validateMessage],
       })
     }
 
