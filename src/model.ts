@@ -25,7 +25,7 @@ import { PROP_DEFAULT_KEY, RELATIONS_KEY, SCHEMA_KEY_OPT } from "./constant"
 import { randomUUID } from "crypto"
 import { getKeyField, getSchemaOptions, ModelRegistry } from "./util"
 
-export class CouchBaseModel<T> {
+export class CouchBaseModel<T extends object> {
   private readonly bucketName: string
   private readonly scopeName: string
   private readonly collectionName: string
@@ -122,24 +122,73 @@ export class CouchBaseModel<T> {
     )
   }
 
+  private deepMerge(
+    target: any,
+    source: any,
+  ) {
+    for (const key of Object.keys(source)) {
+      const value = source[key]
+
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        if (!target[key]) target[key] = {}
+        this.deepMerge(target[key], value)
+      } else if (Array.isArray(value)) {
+        target[key] = [...value]
+      } else {
+        target[key] = value
+      }
+    }
+
+    return target
+  }
+
+  private applyDefaults<T extends object>(
+    data: Partial<T>,
+    schemaClass: new () => T
+  ): Partial<T> {
+    const defaults = Reflect.getMetadata(PROP_DEFAULT_KEY, schemaClass) || {};
+    const clone: any = { ...data };
+
+    for (const [property, defaultValue] of Object.entries(defaults)) {
+      const current = clone[property];
+
+      if (current !== undefined && current !== null) continue;
+
+      if (typeof defaultValue === "function") {
+        clone[property] = defaultValue();
+        continue;
+      }
+
+      if (
+        typeof defaultValue === "object" &&
+        defaultValue !== null &&
+        !Array.isArray(defaultValue)
+      ) {
+        clone[property] = this.deepMerge({}, defaultValue);
+        continue;
+      }
+
+      if (Array.isArray(defaultValue)) {
+        clone[property] = [...defaultValue];
+        continue;
+      }
+
+      clone[property] = defaultValue;
+    }
+
+    return clone
+  }
+
   async create(
     data: Partial<T>,
     tx?: TransactionAttemptContext,
   ): Promise<T & { id: string }> {
-    const instance = plainToInstance(this.schemaClass, data)
-
-    const defaults =
-      Reflect.getMetadata(PROP_DEFAULT_KEY, this.schemaClass) || {}
-    for (const [key, defaultValue] of Object.entries(defaults)) {
-      if (
-        (instance as any)[key] === undefined ||
-        (instance as any)[key] === null
-      ) {
-        ;(instance as any)[key] =
-          typeof defaultValue === "function" ? defaultValue() : defaultValue
-      }
-    }
-
+    const withDefaults = this.applyDefaults<T>(data, this.schemaClass);
+    const instance = plainToInstance(this.schemaClass, withDefaults)
     const errors = await validate(instance as any)
     const errorList = []
     if (errors.length > 0) {

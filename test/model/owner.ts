@@ -70,7 +70,7 @@ export class Owner {
 
   @Type(() => OwnerContact)
   @ValidateNested({ each: false })
-  @Prop({ type: () => OwnerContact, required: false })
+  @Prop({ type: () => OwnerContact, required: false, default: { phone: '+6281111111111', email: 'john@doe.com' } })
   contact?: OwnerContact
 
   @Type(() => Object)

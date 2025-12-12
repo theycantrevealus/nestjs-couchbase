@@ -254,6 +254,41 @@ describe("CouchbaseModule (Dynamic)", () => {
       })
     })
 
+    it("{ default } should set the default value if not set. Object/Class type", async () => {
+      const testData = {
+        name: "John",
+        username: "johnhere",
+      }
+
+      const props: {
+        property: string
+        options: PropOptions
+      }[] = Reflect.getMetadata(
+        PROP_METADATA_KEY,
+        ownerModel.targetSchemaClass,
+      )
+
+      const processData = await ownerModel.create(testData)
+      subChildField(testData).forEach((field) => {
+        const found = props.filter((configured) => configured.options.default)
+        if (found.length > 0) {
+          found.forEach((testItem) => {
+            if (typeof testItem.options.default === "function") {
+              expect(processData).toHaveProperty(
+                testItem.property,
+                testItem.options.default(),
+              )
+            } else {
+              expect(processData).toHaveProperty(
+                testItem.property,
+                testItem.options.default,
+              )
+            }
+          })
+        }
+      })
+    })
+
     it("{ transform } should apply for transform prop", async () => {
       const testData = {
         name: "John",
