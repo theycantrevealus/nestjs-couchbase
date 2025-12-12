@@ -16,7 +16,12 @@ import {
   ValidationArguments,
 } from "class-validator"
 import "reflect-metadata"
-import { PROP_METADATA_KEY, SCHEMA_KEY, SCHEMA_REGISTRY } from "./constant"
+import {
+  PROP_DEFAULT_KEY,
+  PROP_METADATA_KEY,
+  SCHEMA_KEY,
+  SCHEMA_REGISTRY,
+} from "./constant"
 import { PropOptions, SchemaOptions, TimestampOptions } from "./interface"
 import {
   createRelationDecorator,
@@ -39,6 +44,13 @@ export class CustomPropValidator implements ValidatorConstraintInterface {
   }
 }
 
+/**
+ * @function
+ * Schema decorator that mimic mongoose-type
+ *
+ * @param { SchemaOptions} options - Schema configuration
+ * @returns
+ */
 export function Schema(options: SchemaOptions = {}) {
   return (target: any) => {
     const collection = options.collection || toCollectionName(target.name)
@@ -74,7 +86,7 @@ export function Schema(options: SchemaOptions = {}) {
 
 /**
  * @function
- * Prop function that mimic mongoose-type
+ * Prop decorator that mimic mongoose-type
  *
  * @param { PropOptions} options - Property option for data type
  * @returns
@@ -94,69 +106,12 @@ export function Prop(options: PropOptions = {}) {
       Transform(({ value }) => options.transform!(value))(target, propertyKey)
     }
 
-    // if (options.unique) {
-    //   let currentClass = target.constructor
-    //   let schemaOpts = getSchemaOptions(currentClass)
-
-    //   if (!schemaOpts?.collection) {
-    //     let proto = Object.getPrototypeOf(target)
-    //     while (proto && proto !== Object.prototype) {
-    //       const parentClass = proto.constructor
-    //       schemaOpts = getSchemaOptions(parentClass)
-    //       if (schemaOpts?.collection) {
-    //         currentClass = parentClass
-    //         break
-    //       }
-    //       proto = Object.getPrototypeOf(proto)
-    //     }
-    //   }
-
-    //   if (!schemaOpts?.collection) {
-    //     throw new Error(
-    //       `@Prop({ unique: true }) on ${target.constructor.name}.${propertyKey} — no @Schema() found`,
-    //     )
-    //   }
-
-    //   const collection = schemaOpts.collection
-    //   const fullPath = getNestedPath(target, propertyKey, currentClass.name)
-
-    //   const indexName =
-    //     typeof options.unique === "object" && options.unique.name
-    //       ? options.unique.name
-    //       : `idx_${collection}_${fullPath.replace(/\./g, "_")}_unique`
-
-    //   addUniqueIndex({
-    //     collection,
-    //     fields: [fullPath],
-    //     indexName,
-    //     caseSensitive: true,
-    //   })
-    // }
-
     if (options.default !== undefined) {
-      Transform(({ obj }) => {
-        if (obj[propertyKey] === undefined || obj[propertyKey] === null) {
-          return typeof options.default === "function"
-            ? (options.default as Function)()
-            : options.default
-        }
-        return obj[propertyKey]
-      })(target, propertyKey)
+      const defaults =
+        Reflect.getMetadata(PROP_DEFAULT_KEY, target.constructor) || {}
+      defaults[propertyKey] = options.default
+      Reflect.defineMetadata(PROP_DEFAULT_KEY, defaults, target.constructor)
     }
-
-    /*
-    if (type === Object || type === Array) {
-      ClassType(typeFn)(target, propertyKey)
-      if (type === Array) {
-        decorators.push(IsArray())
-        if (options.each !== false) {
-          decorators.push(ValidateNested({ each: true }))
-        }
-      } else {
-        decorators.push(IsObject())
-        decorators.push(ValidateNested())
-      }
-    }*/
 
     if (type === Array) {
       decorators.push(IsArray())
@@ -220,15 +175,18 @@ export function Prop(options: PropOptions = {}) {
 
       Reflect.defineMetadata(PROP_METADATA_KEY, props, target.constructor)
     }
-    // if (!props.includes(propertyKey)) {
-    //   props.push(propertyKey)
-    //   Reflect.defineMetadata(PROP_METADATA_KEY, props, target.constructor)
-    // }
 
     return applyDecorators(...decorators)(target, propertyKey)
   }
 }
 
+/**
+ * @function
+ * Get registered token model
+ *
+ * @param { string} modelName - Model name to get
+ * @returns { string }
+ */
 export function getModelToken(modelName: string): string {
   return `${modelName}Model`
 }

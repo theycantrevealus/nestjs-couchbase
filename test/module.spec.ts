@@ -189,6 +189,71 @@ describe("CouchbaseModule (Dynamic)", () => {
       }).rejects.toThrow()
     })
 
+    it("{ default } should set the default value if not set. String type", async () => {
+      const testData = {
+        name: "Example",
+      }
+
+      const props: {
+        property: string
+        options: PropOptions
+      }[] = Reflect.getMetadata(PROP_METADATA_KEY, breedModel.targetSchemaClass)
+
+      const processData = await breedModel.create(testData)
+      subChildField(testData).forEach((field) => {
+        const found = props.filter((configured) => configured.options.default)
+        if (found.length > 0) {
+          found.forEach((testItem) => {
+            if (typeof testItem.options.default === "function") {
+              expect(processData).toHaveProperty(
+                testItem.property,
+                testItem.options.default(),
+              )
+            } else {
+              expect(processData).toHaveProperty(
+                testItem.property,
+                testItem.options.default,
+              )
+            }
+          })
+        }
+      })
+    })
+
+    it("{ default } should set the default value if not set. Fn type", async () => {
+      const testData = {
+        name: "Example",
+      }
+
+      const props: {
+        property: string
+        options: PropOptions
+      }[] = Reflect.getMetadata(
+        PROP_METADATA_KEY,
+        breedNoKeyModel.targetSchemaClass,
+      )
+
+      const processData = await breedNoKeyModel.create(testData)
+      subChildField(testData).forEach((field) => {
+        const found = props.filter((configured) => configured.options.default)
+        if (found.length > 0) {
+          found.forEach((testItem) => {
+            if (typeof testItem.options.default === "function") {
+              expect(processData).toHaveProperty(
+                testItem.property,
+                testItem.options.default(),
+              )
+            } else {
+              expect(processData).toHaveProperty(
+                testItem.property,
+                testItem.options.default,
+              )
+            }
+          })
+        }
+      })
+    })
+
     it("{ transform } should apply for transform prop", async () => {
       const testData = {
         name: "John",
@@ -237,7 +302,7 @@ describe("CouchbaseModule (Dynamic)", () => {
         username: "johnhere",
         attr: {
           val_one: "qwerty",
-          val_two: "asdfgh"
+          val_two: "asdfgh",
         },
       }
 

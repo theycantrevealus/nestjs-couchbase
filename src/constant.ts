@@ -6,6 +6,7 @@ export const SCHEMA_KEY_OPT = Symbol("couchbase:schema_meta_opt")
 export const KEY_METADATA = Symbol("couchbase:key")
 export const SCHEMA_REGISTRY = new Map<Function, any>()
 export const PROP_METADATA_KEY = "couchbase:props"
+export const PROP_DEFAULT_KEY = "couchbase:default_value"
 export const PROP_UNIQUE_INDEXES_KEY = "couchbase:unique_indexes"
 export const RELATIONS_KEY = "couchbase:relations"
 export const PENDING_UNIQUE_INDEXES: Array<{

@@ -21,7 +21,7 @@ import {
   SchemaOptions,
   TimestampOptions,
 } from "./interface"
-import { RELATIONS_KEY, SCHEMA_KEY_OPT } from "./constant"
+import { PROP_DEFAULT_KEY, RELATIONS_KEY, SCHEMA_KEY_OPT } from "./constant"
 import { randomUUID } from "crypto"
 import { getKeyField, getSchemaOptions, ModelRegistry } from "./util"
 
@@ -127,6 +127,19 @@ export class CouchBaseModel<T> {
     tx?: TransactionAttemptContext,
   ): Promise<T & { id: string }> {
     const instance = plainToInstance(this.schemaClass, data)
+
+    const defaults =
+      Reflect.getMetadata(PROP_DEFAULT_KEY, this.schemaClass) || {}
+    for (const [key, defaultValue] of Object.entries(defaults)) {
+      if (
+        (instance as any)[key] === undefined ||
+        (instance as any)[key] === null
+      ) {
+        ;(instance as any)[key] =
+          typeof defaultValue === "function" ? defaultValue() : defaultValue
+      }
+    }
+
     const errors = await validate(instance as any)
     const errorList = []
     if (errors.length > 0) {
@@ -160,7 +173,7 @@ export class CouchBaseModel<T> {
     } else {
       id = await this.generateId()
     }
-    const content = instanceToPlain(instance)
+    const content = instanceToPlain(instance, { exposeDefaultValues: true })
 
     if (tx) await tx.insert(this.collection, id, content)
     else await this.collection.insert(id, content)
