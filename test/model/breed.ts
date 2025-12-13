@@ -31,6 +31,6 @@ export class BreedNoKey {
   @Prop({ required: true })
   name: string
 
-  @Prop({ required: false, default: "-" })
+  @Prop({ required: false, default: () => "-" })
   remark: string
 }

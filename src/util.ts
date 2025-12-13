@@ -1,17 +1,15 @@
-import { Type } from "class-transformer"
+import { ClassConstructor, Type } from "class-transformer"
 import {
   KEY_METADATA,
   PENDING_UNIQUE_INDEXES,
   PROP_UNIQUE_INDEXES_KEY,
   RELATIONS_KEY,
   SCHEMA_KEY,
-  SCHEMA_KEY_OPT,
   SCHEMA_REGISTRY,
 } from "./constant"
 import {
   KeyOptions,
   RelationOptions,
-  SchemaOptions,
   TimestampOptions,
   UniqueIndexMetadata,
 } from "./interface"
