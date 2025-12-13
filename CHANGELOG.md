@@ -1,3 +1,11 @@
+## [1.7.2](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.7.1...v1.7.2) (2025-12-13)
+
+
+### Bug Fixes
+
+* default field default with test ([d3290d4](https://github.com/theycantrevealus/nestjs-couchbase/commit/d3290d42d2031357e4a54ee1aab08ddc8c1620da))
+* separate applyDefault fn & support default for object/class type ([73cb216](https://github.com/theycantrevealus/nestjs-couchbase/commit/73cb216aabf131bb12d93481f06b214f0fce6efd))
+
 ## [1.7.1](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.7.0...v1.7.1) (2025-12-11)
 
 
