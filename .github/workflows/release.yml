@@ -39,30 +39,31 @@ jobs:
 
       - name: Initialize Couchbase
         run: |
-          sleep 20
-          docker exec couchbase couchbase-cli cluster-init \
-            --cluster localhost \
-            --cluster-username user \
-            --cluster-password password \
-            --services data,index,query
+          echo "Waiting for Couchbase..."
+          for i in {1..30}; do
+            curl -sf http://localhost:8091/pools && break
+            sleep 2
+          done
 
-          docker exec couchbase couchbase-cli bucket-create \
-            --cluster localhost \
-            --username user \
-            --password password \
-            --bucket testing \
-            --bucket-type couchbase \
-            --bucket-ramsize 256
+          # Cluster init
+          curl -u Administrator:password -X POST \
+            http://localhost:8091/pools/default \
+            -d services=kv,index,n1ql \
+            -d memoryQuota=512 \
+            -d indexMemoryQuota=256
 
-          docker exec couchbase couchbase-cli user-manage \
-            --cluster localhost \
-            --username user \
-            --password password \
-            --set \
-            --rbac-username user \
-            --rbac-password password \
-            --roles admin \
-            --auth-domain local
+          # Create bucket
+          curl -u Administrator:password -X POST \
+            http://localhost:8091/pools/default/buckets \
+            -d name=testing \
+            -d bucketType=couchbase \
+            -d ramQuotaMB=256
+
+          # Create user
+          curl -u Administrator:password -X PUT \
+            http://localhost:8091/settings/rbac/users/local/user \
+            -d password=password \
+            -d roles=admin
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
