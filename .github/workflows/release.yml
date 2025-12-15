@@ -84,7 +84,7 @@ jobs:
         run: npm test
 
       - name: Run tests
-        run: npm test:actual
+        run: npm run test:actual
 
       - name: List build files
         run: |
