@@ -39,31 +39,41 @@ jobs:
 
       - name: Initialize Couchbase
         run: |
-          echo "Waiting for Couchbase..."
-          for i in {1..30}; do
+          echo "Waiting for Couchbase to be ready..."
+          for i in {1..40}; do
             curl -sf http://localhost:8091/pools && break
-            sleep 2
+            sleep 3
           done
 
-          # Cluster init
-          curl -u Administrator:password -X POST \
+          echo "Initializing cluster..."
+          curl -s -u Administrator:password -X POST \
             http://localhost:8091/pools/default \
             -d services=kv,index,n1ql \
             -d memoryQuota=512 \
             -d indexMemoryQuota=256
 
-          # Create bucket
-          curl -u Administrator:password -X POST \
+          echo "Setting admin credentials..."
+          curl -s -u Administrator:password -X POST \
+            http://localhost:8091/settings/web \
+            -d port=8091 \
+            -d username=Administrator \
+            -d password=password
+
+          echo "Creating bucket..."
+          curl -s -u Administrator:password -X POST \
             http://localhost:8091/pools/default/buckets \
             -d name=testing \
             -d bucketType=couchbase \
             -d ramQuotaMB=256
 
-          # Create user
-          curl -u Administrator:password -X PUT \
+          echo "Waiting for bucket to be ready..."
+          sleep 10
+
+          echo "Creating user with bucket access..."
+          curl -s -u Administrator:password -X PUT \
             http://localhost:8091/settings/rbac/users/local/user \
             -d password=password \
-            -d roles=admin
+            -d roles=bucket_full_access[testing]
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
