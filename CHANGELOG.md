@@ -1,3 +1,16 @@
+# [1.8.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.7.2...v1.8.0) (2025-12-15)
+
+
+### Bug Fixes
+
+* dynamic timestamp field from model schema ([ba4493b](https://github.com/theycantrevealus/nestjs-couchbase/commit/ba4493bb3db17b093d7f697c08a054053a04f476))
+* timestamp on get operation, close [#10](https://github.com/theycantrevealus/nestjs-couchbase/issues/10) ([39ea3fd](https://github.com/theycantrevealus/nestjs-couchbase/commit/39ea3fd1489a23ea4944aad75c14943dce362318))
+
+
+### Features
+
+* apply local storage for module testing, close [#11](https://github.com/theycantrevealus/nestjs-couchbase/issues/11) ([39c3903](https://github.com/theycantrevealus/nestjs-couchbase/commit/39c3903ff8353ab06117cc3ba12cb4588155b544))
+
 ## [1.7.2](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.7.1...v1.7.2) (2025-12-13)
 
 
