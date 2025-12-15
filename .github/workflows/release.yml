@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [master, beta, "release/*"]
+    branches: [master, beta, "release/*", "workflow/*"]
     tags:
       - "v*"
 
@@ -14,37 +14,81 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    services:
+      couchbase:
+        image: couchbase:enterprise-7.6.2
+        ports:
+          - 8091:8091
+          - 8092:8092
+          - 8093:8093
+          - 11210:11210
+        options: >-
+          --health-cmd "curl -f http://localhost:8091/pools || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
-      # Checkout code
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Debug branch
       - name: Debug branch
         run: echo "Current branch is $GITHUB_REF"
 
-      # Setup Node.js
+      - name: Initialize Couchbase
+        run: |
+          sleep 20
+          docker exec couchbase couchbase-cli cluster-init \
+            --cluster localhost \
+            --cluster-username user \
+            --cluster-password password \
+            --services data,index,query
+
+          docker exec couchbase couchbase-cli bucket-create \
+            --cluster localhost \
+            --username user \
+            --password password \
+            --bucket testing \
+            --bucket-type couchbase \
+            --bucket-ramsize 256
+
+          docker exec couchbase couchbase-cli user-manage \
+            --cluster localhost \
+            --username user \
+            --password password \
+            --set \
+            --rbac-username user \
+            --rbac-password password \
+            --roles admin \
+            --auth-domain local
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: "npm"
 
-      # Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # Run tests
       - name: Run tests
+        env:
+          APP_PORT: 3000
+          COUCHBASE_CONNECTION_STRING: couchbase://localhost
+          COUCHBASE_BUCKET: testing
+          COUCHBASE_USERNAME: user
+          COUCHBASE_PASSWORD: password
         run: npm test
+
+      - name: Run tests
+        run: npm test:actual
 
       - name: List build files
         run: |
           ls -R dist || echo "dist folder does not exist"
 
-      # Semantic-release dry run (optional, can remove for real release)
       - name: Dry-run semantic-release
         if: github.ref != 'refs/heads/master'
         env:
@@ -52,7 +96,6 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release --dry-run
 
-      # Actual release
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
