@@ -522,6 +522,19 @@ export class CouchBaseModel<T extends object> {
 
   private hydrate(content: any, id: string): T & { id: string } {
     const instance = plainToInstance(this.schemaClass, content)
-    return { ...instance, id } as T & { id: string }
+    const schemaMeta = getSchemaOptions(this.schemaClass)
+
+    instance[id] = id
+
+    const timestamps = schemaMeta?.timestamps;
+    if (timestamps && typeof timestamps === "object") {
+      Object.values(timestamps).forEach((fieldName: string) => {
+        if (content[fieldName] !== undefined) {
+          instance[fieldName] = content[fieldName];
+        }
+      });
+    }
+
+    return instance as T & { id: string };
   }
 }

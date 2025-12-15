@@ -13,7 +13,14 @@ import { Owner } from "./model/owner"
 import { PROP_METADATA_KEY } from "../src/constant"
 import { getSchemaOptions, subChildField } from "../src/util"
 
+var resetStore: () => void;
+
 jest.mock("couchbase", () => {
+  const store = new Map<string, any>();
+  resetStore = () => {
+    store.clear()
+  }
+
   const mockManager = {
     createScope: jest.fn().mockResolvedValue(undefined),
     createCollection: jest.fn().mockResolvedValue(undefined),
@@ -33,11 +40,28 @@ jest.mock("couchbase", () => {
   }
 
   const mockCollection = {
-    insert: jest.fn().mockResolvedValue({ cas: BigInt(1) }),
-    get: jest.fn(),
-    upsert: jest.fn(),
-    replace: jest.fn(),
-    remove: jest.fn(),
+    insert: jest.fn(async (key, value) => {
+      if (store.has(key)) throw new Error("DocumentExists")
+      store.set(key, value)
+      return { cas: BigInt(1) }
+    }),
+    get: jest.fn(async (key) => {
+      if (!store.has(key)) throw new Error("DocumentNotFound")
+      return { content: store.get(key), cas: BigInt(1) }
+    }),
+    upsert: jest.fn(async (key, value) => {
+      store.set(key, value)
+      return { cas: BigInt(1) }
+    }),
+    replace: jest.fn(async (key, value) => {
+      if (!store.has(key)) throw new Error("DocumentNotFound")
+      store.set(key, value);
+      return { cas: BigInt(1) };
+    }),
+    remove: jest.fn(async (key) => {
+      store.delete(key);
+      return { cas: BigInt(1) };
+    }),
     scope: mockScope,
   }
 
@@ -47,7 +71,9 @@ jest.mock("couchbase", () => {
 
   const mockCluster = {
     bucket: jest.fn().mockReturnValue(mockBucket),
-    query: jest.fn().mockResolvedValue({ rows: [] }),
+    query: jest.fn(async () => ({
+      rows: [...store.values()],
+    })),
     close: jest.fn().mockResolvedValue(undefined),
     diagnostics: jest.fn().mockResolvedValue({ version: "7.2.0" }),
     transactions: jest.fn().mockReturnValue({
@@ -69,6 +95,10 @@ jest.mock("couchbase", () => {
     Collection: jest.fn(() => mockCollection),
   }
 })
+
+beforeEach(() => {
+  resetStore()
+});
 
 describe("CouchbaseModule (Dynamic)", () => {
   let cluster: Cluster
@@ -346,6 +376,18 @@ describe("CouchbaseModule (Dynamic)", () => {
       expect(createProcess).toHaveProperty("username")
       expect(createProcess).toHaveProperty("attr.val_one")
       expect(createProcess).toHaveProperty("attr.val_two")
+    })
+
+    it("{ validate } should validate timestamp data is exist", async () => {
+      const testData = {
+        name: "Example",
+      }
+
+      const processData = await breedNoKeyModel.create(testData)
+      const actualData = await breedNoKeyModel.get(processData.id)
+      expect(actualData).toHaveProperty("created_at")
+      expect(actualData).toHaveProperty("updated_at")
+      expect(actualData).toHaveProperty("deleted_at")
     })
   })
 
