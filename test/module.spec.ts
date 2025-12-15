@@ -377,6 +377,18 @@ describe("CouchbaseModule (Dynamic)", () => {
       expect(createProcess).toHaveProperty("attr.val_one")
       expect(createProcess).toHaveProperty("attr.val_two")
     })
+
+    it("{ validate } should validate timestamp data is exist", async () => {
+      const testData = {
+        name: "Example",
+      }
+
+      const processData = await breedNoKeyModel.create(testData)
+      const actualData = await breedNoKeyModel.get(processData.id)
+      expect(actualData).toHaveProperty("created_at")
+      expect(actualData).toHaveProperty("updated_at")
+      expect(actualData).toHaveProperty("deleted_at")
+    })
   })
 
   describe("Positive", () => {

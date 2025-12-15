@@ -521,7 +521,13 @@ export class CouchBaseModel<T extends object> {
   }
 
   private hydrate(content: any, id: string): T & { id: string } {
-    const instance = plainToInstance(this.schemaClass, content)
-    return { ...instance, id } as T & { id: string }
+    const instance = plainToInstance(this.schemaClass, content);
+
+    (instance as any).id = id;
+    (instance as any).created_at = content.created_at;
+    (instance as any).updated_at = content.updated_at;
+    (instance as any).deleted_at = content.deleted_at;
+
+    return instance as T & { id: string };
   }
 }
