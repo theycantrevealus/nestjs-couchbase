@@ -11,3 +11,4 @@ dist/
 coverage
 src/coverage/
 scenario/coverage/
+bin/

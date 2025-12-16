@@ -6,7 +6,7 @@ import { Cluster } from "couchbase"
 import { CouchBaseModel, CouchBaseModule, getModelToken } from "../src"
 import { COUCHBASE_CLUSTER } from "../src/constant"
 import { DiscoveryService } from "@nestjs/core"
-
+jest.setTimeout(20000)
 describe("Couchbase actual test", () => {
   let moduleRef: TestingModule
   let cluster: Cluster
@@ -22,11 +22,10 @@ describe("Couchbase actual test", () => {
         CouchBaseModule.forRootAsync({
           imports: [ConfigModule],
           useFactory: async (configService: ConfigService) => ({
-            connectionString:
-              configService.get("COUCHBASE_CONNECTION_STRING") || "",
-            username: configService.get("COUCHBASE_USERNAME") || "",
-            password: configService.get("COUCHBASE_PASSWORD") || "",
-            bucketName: configService.get("COUCHBASE_BUCKET") || "",
+            connectionString: configService.get("COUCHBASE_CONNECTION_STRING"),
+            username: configService.get("COUCHBASE_USERNAME"),
+            password: configService.get("COUCHBASE_PASSWORD"),
+            bucketName: configService.get("COUCHBASE_BUCKET"),
           }),
           inject: [ConfigService],
         }),

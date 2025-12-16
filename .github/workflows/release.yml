@@ -23,7 +23,7 @@ jobs:
           - 8093:8093
           - 11210:11210
         options: >-
-          --health-cmd "curl -f http://localhost:8091/pools || exit 1"
+          --health-cmd "curl -f http://couchbase:8091/pools || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -39,41 +39,59 @@ jobs:
 
       - name: Initialize Couchbase
         run: |
-          echo "Waiting for Couchbase to be ready..."
-          for i in {1..40}; do
-            curl -sf http://localhost:8091/pools && break
-            sleep 3
+          echo "Waiting for Couchbase management port to be ready..."
+          until curl -sf http://localhost:8091/pools; do
+            echo "Still waiting for management API..."
+            sleep 5
           done
 
-          echo "Initializing cluster..."
-          curl -s -u Administrator:password -X POST \
-            http://localhost:8091/pools/default \
-            -d services=kv,index,n1ql \
-            -d memoryQuota=512 \
-            -d indexMemoryQuota=256
+          # Step 1: Set memory quotas (no auth yet)
+          curl -s -X POST http://localhost:8091/pools/default \
+            -d 'memoryQuota=1024'
 
-          echo "Setting admin credentials..."
-          curl -s -u Administrator:password -X POST \
-            http://localhost:8091/settings/web \
-            -d port=8091 \
-            -d username=Administrator \
-            -d password=password
+          # Step 2: Assign services FIRST (CRITICAL - enables KV/Data)
+          curl -s -X POST http://localhost:8091/node/controller/setupServices \
+            -d 'services=kv,index,n1ql,fts,eventing,cbas,backup'
 
-          echo "Creating bucket..."
-          curl -s -u Administrator:password -X POST \
-            http://localhost:8091/pools/default/buckets \
-            -d name=testing \
-            -d bucketType=couchbase \
-            -d ramQuotaMB=256
+          # Step 3: NOW set admin credentials
+          curl -s -X POST http://localhost:8091/settings/web \
+            -d 'username=Administrator' \
+            -d 'password=password' \
+            -d 'port=8091'
 
-          echo "Waiting for bucket to be ready..."
-          sleep 10
+          echo "Creating bucket 'testing'..."
+          curl -s -u Administrator:password -X POST http://localhost:8091/pools/default/buckets \
+            -d 'name=testing' \
+            -d 'bucketType=couchbase' \
+            -d 'ramQuotaMB=400' \
+            -d 'flushEnabled=1'
 
-          echo "Creating user with bucket access..."
-          curl -s -u Administrator:password -X PUT \
-            http://localhost:8091/settings/rbac/users/local/user \
-            -d password=password \
-            -d roles=bucket_full_access[testing]
+          echo "Creating RBAC user 'user'..."
+          curl -s -u Administrator:password -X PUT http://localhost:8091/settings/rbac/users/local/user \
+            -d 'password=password' \
+            -d 'roles=bucket_full_access[testing]'
+
+          # Robust wait: First for KV service advertisement, then bucket health
+          echo "Waiting for KV service and bucket to become healthy (can take 1-5 minutes on runners)..."
+          timeout=300  # Fail after 5 minutes
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if curl -sf -u Administrator:password http://localhost:8091/pools/default/nodeServices | grep -q '"kv"'; then
+              echo "KV service advertised!"
+              break
+            fi
+            echo "KV not advertised yet... ($elapsed/$timeout s)"
+            sleep 10
+            elapsed=$((elapsed + 10))
+          done
+          [ $elapsed -lt $timeout ] || { echo "Timeout waiting for KV service"; exit 1; }
+
+          until curl -sf -u Administrator:password http://localhost:8091/pools/default/buckets/testing | jq -e '.nodes[0].status == "healthy"' > /dev/null; do
+            echo "Bucket not healthy yet..."
+            sleep 10
+          done
+
+          echo "Couchbase fully ready!"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -84,30 +102,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
+      - name: Run mocked test
+        run: npm test
+
+      - name: Run actual
         env:
           APP_PORT: 3000
           COUCHBASE_CONNECTION_STRING: couchbase://localhost
           COUCHBASE_BUCKET: testing
-          COUCHBASE_USERNAME: user
+          COUCHBASE_USERNAME: Administrator
           COUCHBASE_PASSWORD: password
-        run: npm test
-
-      - name: Run tests
         run: npm run test:actual
 
       - name: List build files
+        if: ${{ !env.ACT }}
         run: |
           ls -R dist || echo "dist folder does not exist"
 
       - name: Dry-run semantic-release
-        if: github.ref != 'refs/heads/master'
+        if: github.ref != 'refs/heads/master' && ${{ !env.ACT }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release --dry-run
 
       - name: Release
+        if: ${{ !env.ACT }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
