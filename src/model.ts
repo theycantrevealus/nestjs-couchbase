@@ -150,17 +150,17 @@ export class CouchBaseModel<T extends object> {
     data: Partial<T>,
     schemaClass: new () => T
   ): Partial<T> {
-    const defaults = Reflect.getMetadata(PROP_DEFAULT_KEY, schemaClass) || {};
-    const clone: any = { ...data };
+    const defaults = Reflect.getMetadata(PROP_DEFAULT_KEY, schemaClass) || {}
+    const clone: any = { ...data }
 
     for (const [property, defaultValue] of Object.entries(defaults)) {
-      const current = clone[property];
+      const current = clone[property]
 
-      if (current !== undefined && current !== null) continue;
+      if (current !== undefined && current !== null) continue
 
       if (typeof defaultValue === "function") {
-        clone[property] = defaultValue();
-        continue;
+        clone[property] = defaultValue()
+        continue
       }
 
       if (
@@ -168,26 +168,46 @@ export class CouchBaseModel<T extends object> {
         defaultValue !== null &&
         !Array.isArray(defaultValue)
       ) {
-        clone[property] = this.deepMerge({}, defaultValue);
-        continue;
+        clone[property] = this.deepMerge({}, defaultValue)
+        continue
       }
 
       if (Array.isArray(defaultValue)) {
-        clone[property] = [...defaultValue];
-        continue;
+        clone[property] = [...defaultValue]
+        continue
       }
 
-      clone[property] = defaultValue;
+      clone[property] = defaultValue
     }
 
     return clone
   }
 
+  private serializeRelations(
+    instance: any,
+    schemaClass: Function
+  ) {
+    const relations = Reflect.getMetadata(RELATIONS_KEY, schemaClass) || []
+    for (const rel of relations) {
+      const value = instance[rel.propertyKey]
+      if (!value) continue
+
+      if (typeof value === "object" && value.id) {
+        instance[rel.propertyKey] = value.id
+      }
+
+      if (Array.isArray(value)) {
+        instance[rel.propertyKey] = value.map((v) =>
+          typeof v === "object" && v.id ? v.id : v
+        )
+      }
+    }
+  }
   async create(
     data: Partial<T>,
     tx?: TransactionAttemptContext,
   ): Promise<T & { id: string }> {
-    const withDefaults = this.applyDefaults<T>(data, this.schemaClass);
+    const withDefaults = this.applyDefaults<T>(data, this.schemaClass)
     const instance = plainToInstance(this.schemaClass, withDefaults)
     const errors = await validate(instance as any)
     const errorList = []
@@ -222,6 +242,8 @@ export class CouchBaseModel<T extends object> {
     } else {
       id = await this.generateId()
     }
+
+    this.serializeRelations(instance, this.schemaClass)
     const content = instanceToPlain(instance, { exposeDefaultValues: true })
 
     if (tx) await tx.insert(this.collection, id, content)
@@ -526,15 +548,15 @@ export class CouchBaseModel<T extends object> {
 
     instance[id] = id
 
-    const timestamps = schemaMeta?.timestamps;
+    const timestamps = schemaMeta?.timestamps
     if (timestamps && typeof timestamps === "object") {
       Object.values(timestamps).forEach((fieldName: string) => {
         if (content[fieldName] !== undefined) {
-          instance[fieldName] = content[fieldName];
+          instance[fieldName] = content[fieldName]
         }
-      });
+      })
     }
 
-    return instance as T & { id: string };
+    return instance as T & { id: string }
   }
 }
