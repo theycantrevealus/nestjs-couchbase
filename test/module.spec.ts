@@ -334,7 +334,6 @@ describe("CouchbaseModule (Dynamic)", () => {
         username: "johnhere",
       })
 
-      // cat
       const catData = {
         name: "Persian",
         age: 2,
@@ -344,8 +343,6 @@ describe("CouchbaseModule (Dynamic)", () => {
       }
 
       const createCat = await catModel.create(catData)
-      expect(createCat).toHaveProperty("breed")
-      expect(createCat).toHaveProperty("owner")
       expect(createCat).toHaveProperty("breed", createBreedNoKey.id);
       expect(createCat).toHaveProperty("owner", createOwner.id);
     })
