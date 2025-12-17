@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [master, beta, "release/*"]
+    branches: [master, beta, "release/*", "workflow/*"]
     tags:
       - "v*"
 
@@ -14,46 +14,120 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    services:
+      couchbase:
+        image: couchbase:enterprise-7.6.2
+        ports:
+          - 8091:8091
+          - 8092:8092
+          - 8093:8093
+          - 11210:11210
+        options: >-
+          --health-cmd "curl -f http://couchbase:8091/pools || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
-      # Checkout code
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Debug branch
       - name: Debug branch
         run: echo "Current branch is $GITHUB_REF"
 
-      # Setup Node.js
+      - name: Initialize Couchbase
+        run: |
+          echo "Waiting for Couchbase management port to be ready..."
+          until curl -sf http://localhost:8091/pools; do
+            echo "Still waiting for management API..."
+            sleep 5
+          done
+
+          # Step 1: Set memory quotas (no auth yet)
+          curl -s -X POST http://localhost:8091/pools/default \
+            -d 'memoryQuota=1024'
+
+          # Step 2: Assign services FIRST (CRITICAL - enables KV/Data)
+          curl -s -X POST http://localhost:8091/node/controller/setupServices \
+            -d 'services=kv,index,n1ql,fts,eventing,cbas,backup'
+
+          # Step 3: NOW set admin credentials
+          curl -s -X POST http://localhost:8091/settings/web \
+            -d 'username=Administrator' \
+            -d 'password=password' \
+            -d 'port=8091'
+
+          echo "Creating bucket 'testing'..."
+          curl -s -u Administrator:password -X POST http://localhost:8091/pools/default/buckets \
+            -d 'name=testing' \
+            -d 'bucketType=couchbase' \
+            -d 'ramQuotaMB=400' \
+            -d 'flushEnabled=1'
+
+          echo "Creating RBAC user 'user'..."
+          curl -s -u Administrator:password -X PUT http://localhost:8091/settings/rbac/users/local/user \
+            -d 'password=password' \
+            -d 'roles=bucket_full_access[testing]'
+
+          # Robust wait: First for KV service advertisement, then bucket health
+          echo "Waiting for KV service and bucket to become healthy (can take 1-5 minutes on runners)..."
+          timeout=300  # Fail after 5 minutes
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if curl -sf -u Administrator:password http://localhost:8091/pools/default/nodeServices | grep -q '"kv"'; then
+              echo "KV service advertised!"
+              break
+            fi
+            echo "KV not advertised yet... ($elapsed/$timeout s)"
+            sleep 10
+            elapsed=$((elapsed + 10))
+          done
+          [ $elapsed -lt $timeout ] || { echo "Timeout waiting for KV service"; exit 1; }
+
+          until curl -sf -u Administrator:password http://localhost:8091/pools/default/buckets/testing | jq -e '.nodes[0].status == "healthy"' > /dev/null; do
+            echo "Bucket not healthy yet..."
+            sleep 10
+          done
+
+          echo "Couchbase fully ready!"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: "npm"
 
-      # Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # Run tests
-      - name: Run tests
+      - name: Run mocked test
         run: npm test
 
+      - name: Run actual
+        env:
+          APP_PORT: 3000
+          COUCHBASE_CONNECTION_STRING: couchbase://localhost
+          COUCHBASE_BUCKET: testing
+          COUCHBASE_USERNAME: Administrator
+          COUCHBASE_PASSWORD: password
+        run: npm run test:actual
+
       - name: List build files
+        if: ${{ !env.ACT }}
         run: |
           ls -R dist || echo "dist folder does not exist"
 
-      # Semantic-release dry run (optional, can remove for real release)
       - name: Dry-run semantic-release
-        if: github.ref != 'refs/heads/master'
+        if: github.ref != 'refs/heads/master' && ${{ !env.ACT }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release --dry-run
 
-      # Actual release
       - name: Release
+        if: ${{ !env.ACT }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
