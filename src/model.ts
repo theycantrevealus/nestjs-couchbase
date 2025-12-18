@@ -8,6 +8,7 @@ import {
   TransactionGetResult,
   CollectionManager,
   Bucket,
+  TransactionQueryResult,
 } from "couchbase"
 import {
   plainToInstance,
@@ -67,37 +68,54 @@ export class CouchBaseModel<T extends object> {
     scope: string,
     collection: string,
   ) {
-    if (scope !== "_default") {
-      try {
-        await Promise.race([
-          manager.createScope(scope),
-          new Promise((_, r) =>
-            setTimeout(() => r(new Error("timeout")), 10000),
-          ),
-        ])
-      } catch (err: any) {
-        if (
-          !err.message.includes("already exists") &&
-          !err.message.includes("timeout")
-        ) {
-          console.warn("Scope issue:", err)
+    if (manager) {
+      const scopes = await manager.getAllScopes()
+      const targetScope = scopes.find((foundScope) => foundScope.name === scope)
+
+      if (scope !== "_default") {
+        try {
+          if (!targetScope) {
+            await Promise.race([
+              manager.createScope(scope),
+              new Promise((_, r) =>
+                setTimeout(() => r(new Error("timeout")), 10000),
+              ),
+            ])
+          }
+        } catch (err: any) {
+          if (
+            !err.message.includes("already exists") &&
+            !err.message.includes("timeout")
+          ) {
+            console.warn("Scope issue:", err)
+          }
         }
       }
-    }
 
-    try {
-      await Promise.race([
-        manager.createCollection(collection, scope),
-        new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 10000)),
-      ])
-    } catch (err: any) {
-      if (err.message.includes("timeout")) {
-        console.warn(
-          `createCollection() timed out for ${scope}.${collection} — likely hanging on Management API`,
+      try {
+        const collectionExists = targetScope.collections.some(
+          (foundCollection) => foundCollection.name === collection,
         )
-      } else if (!err.message.includes("collection exists")) {
-        console.warn("Collection creation failed:", err)
+
+        if (!collectionExists) {
+          await Promise.race([
+            manager.createCollection(collection, scope),
+            new Promise((_, r) =>
+              setTimeout(() => r(new Error("timeout")), 10000),
+            ),
+          ])
+        }
+      } catch (err: any) {
+        if (err.message.includes("timeout")) {
+          console.warn(
+            `createCollection() timed out for ${scope}.${collection} — likely hanging on Management API`,
+          )
+        } else if (!err.message.includes("collection exists")) {
+          console.warn("Collection creation failed:", err)
+        }
       }
+    } else {
+      console.warn("Collection manager is not configured")
     }
   }
 
@@ -122,10 +140,7 @@ export class CouchBaseModel<T extends object> {
     )
   }
 
-  private deepMerge(
-    target: any,
-    source: any,
-  ) {
+  private deepMerge(target: any, source: any) {
     for (const key of Object.keys(source)) {
       const value = source[key]
 
@@ -148,19 +163,19 @@ export class CouchBaseModel<T extends object> {
 
   private applyDefaults<T extends object>(
     data: Partial<T>,
-    schemaClass: new () => T
+    schemaClass: new () => T,
   ): Partial<T> {
-    const defaults = Reflect.getMetadata(PROP_DEFAULT_KEY, schemaClass) || {};
-    const clone: any = { ...data };
+    const defaults = Reflect.getMetadata(PROP_DEFAULT_KEY, schemaClass) || {}
+    const clone: any = { ...data }
 
     for (const [property, defaultValue] of Object.entries(defaults)) {
-      const current = clone[property];
+      const current = clone[property]
 
-      if (current !== undefined && current !== null) continue;
+      if (current !== undefined && current !== null) continue
 
       if (typeof defaultValue === "function") {
-        clone[property] = defaultValue();
-        continue;
+        clone[property] = defaultValue()
+        continue
       }
 
       if (
@@ -168,16 +183,16 @@ export class CouchBaseModel<T extends object> {
         defaultValue !== null &&
         !Array.isArray(defaultValue)
       ) {
-        clone[property] = this.deepMerge({}, defaultValue);
-        continue;
+        clone[property] = this.deepMerge({}, defaultValue)
+        continue
       }
 
       if (Array.isArray(defaultValue)) {
-        clone[property] = [...defaultValue];
-        continue;
+        clone[property] = [...defaultValue]
+        continue
       }
 
-      clone[property] = defaultValue;
+      clone[property] = defaultValue
     }
 
     return clone
@@ -187,7 +202,7 @@ export class CouchBaseModel<T extends object> {
     data: Partial<T>,
     tx?: TransactionAttemptContext,
   ): Promise<T & { id: string }> {
-    const withDefaults = this.applyDefaults<T>(data, this.schemaClass);
+    const withDefaults = this.applyDefaults<T>(data, this.schemaClass)
     const instance = plainToInstance(this.schemaClass, withDefaults)
     const errors = await validate(instance as any)
     const errorList = []
@@ -291,6 +306,16 @@ export class CouchBaseModel<T extends object> {
       await tx.remove(doc)
     } else {
       await this.collection.remove(id)
+    }
+  }
+
+  async removeAll(tx?: TransactionAttemptContext): Promise<void> {
+    if (tx) {
+      await tx.query("DELETE FROM `testing`.`_default`.`breed`")
+    } else {
+      await this.cluster.query(
+        `DELETE FROM \`${this.bucketName}\`.\`${this.collection.scope.name}\`.\`${this.collection.name}\``,
+      )
     }
   }
 
@@ -526,15 +551,15 @@ export class CouchBaseModel<T extends object> {
 
     instance[id] = id
 
-    const timestamps = schemaMeta?.timestamps;
+    const timestamps = schemaMeta?.timestamps
     if (timestamps && typeof timestamps === "object") {
       Object.values(timestamps).forEach((fieldName: string) => {
         if (content[fieldName] !== undefined) {
-          instance[fieldName] = content[fieldName];
+          instance[fieldName] = content[fieldName]
         }
-      });
+      })
     }
 
-    return instance as T & { id: string };
+    return instance as T & { id: string }
   }
 }

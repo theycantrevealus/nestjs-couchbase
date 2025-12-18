@@ -3,7 +3,7 @@ import { Key } from "../../src/util"
 
 @Schema({
   collection: "breed",
-  scope: "_default",
+  scope: "customized",
   timestamps: {
     createdAt: "created_at",
     updatedAt: "updated_at",
