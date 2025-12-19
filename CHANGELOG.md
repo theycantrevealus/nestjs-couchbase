@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.8.0...v1.8.1) (2025-12-19)
+
+
+### Bug Fixes
+
+* relation field should save only id ([775d04b](https://github.com/theycantrevealus/nestjs-couchbase/commit/775d04bac3e8d671e88492d448f1b142726477a7))
+
 # [1.8.0](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.7.2...v1.8.0) (2025-12-15)
 
 
