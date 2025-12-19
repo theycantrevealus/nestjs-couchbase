@@ -12,6 +12,8 @@ import { CouchBaseService } from "../src/service"
 import { Owner } from "./model/owner"
 import { PROP_METADATA_KEY } from "../src/constant"
 import { getSchemaOptions, subChildField } from "../src/util"
+import { Cat } from "./model/cat"
+import { Status } from "./enum"
 
 var resetStore: () => void;
 
@@ -107,6 +109,7 @@ describe("CouchbaseModule (Dynamic)", () => {
   let breedModel: CouchBaseModel<Breed>
   let breedNoKeyModel: CouchBaseModel<BreedNoKey>
   let ownerModel: CouchBaseModel<Owner>
+  let catModel: CouchBaseModel<Cat>
   let app
 
   beforeEach(async () => {
@@ -120,7 +123,7 @@ describe("CouchbaseModule (Dynamic)", () => {
             bucketName: "test",
           }),
         }),
-        CouchBaseModule.forFeature([Breed, BreedNoKey, Owner]),
+        CouchBaseModule.forFeature([Breed, BreedNoKey, Owner, Cat]),
       ],
     }).compile()
 
@@ -135,6 +138,7 @@ describe("CouchbaseModule (Dynamic)", () => {
       getModelToken(BreedNoKey.name),
     )
     ownerModel = module.get<CouchBaseModel<Owner>>(getModelToken(Owner.name))
+    catModel = module.get<CouchBaseModel<Cat>>(getModelToken(Cat.name))
   })
 
   afterEach(async () => {
@@ -317,6 +321,30 @@ describe("CouchbaseModule (Dynamic)", () => {
           })
         }
       })
+    })
+
+    it("{ default } should set id only for relation value instead of full object", async () => {
+      const createBreedNoKey = await breedNoKeyModel.create({
+        name: "Siamese",
+        remark: "Siamese Cats are incredibly social, intelligent and vocal—they'll talk to anyone who wants to listen, and even those who don't.",
+      })
+
+      const createOwner = await ownerModel.create({
+        name: "John",
+        username: "johnhere",
+      })
+
+      const catData = {
+        name: "Persian",
+        age: 2,
+        breed: createBreedNoKey,
+        status: Status.HEALTHY,
+        owner: createOwner,
+      }
+
+      const createCat = await catModel.create(catData)
+      expect(createCat).toHaveProperty("breed", createBreedNoKey.id);
+      expect(createCat).toHaveProperty("owner", createOwner.id);
     })
 
     it("{ transform } should apply for transform prop", async () => {
