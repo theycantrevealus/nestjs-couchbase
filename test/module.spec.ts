@@ -15,22 +15,23 @@ import { getSchemaOptions, subChildField } from "../src/util"
 import { Cat } from "./model/cat"
 import { Status } from "./enum"
 
-var resetStore: () => void;
+var resetStore: () => void
 
 jest.mock("couchbase", () => {
-  const store = new Map<string, any>();
+  const store = new Map<string, any>()
   resetStore = () => {
     store.clear()
   }
 
   const mockManager = {
+    getAllScopes: jest.fn().mockResolvedValue([]),
     createScope: jest.fn().mockResolvedValue(undefined),
     createCollection: jest.fn().mockResolvedValue(undefined),
   }
 
   const mockBucket = {
     name: "test_bucket",
-    collections: jest.fn().mockReturnValue(mockManager),
+    collections: jest.fn(() => mockManager),
     defaultCollection: jest.fn(),
     scope: jest.fn(),
   }
@@ -39,6 +40,7 @@ jest.mock("couchbase", () => {
     name: "_default",
     bucket: jest.fn(() => mockBucket),
     collection: jest.fn(),
+    collections: [],
   }
 
   const mockCollection = {
@@ -57,19 +59,21 @@ jest.mock("couchbase", () => {
     }),
     replace: jest.fn(async (key, value) => {
       if (!store.has(key)) throw new Error("DocumentNotFound")
-      store.set(key, value);
-      return { cas: BigInt(1) };
+      store.set(key, value)
+      return { cas: BigInt(1) }
     }),
     remove: jest.fn(async (key) => {
-      store.delete(key);
-      return { cas: BigInt(1) };
+      store.delete(key)
+      return { cas: BigInt(1) }
     }),
     scope: mockScope,
   }
 
+  // wire up relationships
+  mockManager.getAllScopes.mockResolvedValue([mockScope])
   mockBucket.defaultCollection.mockReturnValue(mockCollection)
-  mockBucket.scope = jest.fn(() => mockScope)
-  mockScope.collection = jest.fn(() => mockCollection)
+  mockBucket.scope.mockReturnValue(mockScope)
+  mockScope.collection.mockReturnValue(mockCollection)
 
   const mockCluster = {
     bucket: jest.fn().mockReturnValue(mockBucket),
@@ -100,7 +104,7 @@ jest.mock("couchbase", () => {
 
 beforeEach(() => {
   resetStore()
-});
+})
 
 describe("CouchbaseModule (Dynamic)", () => {
   let cluster: Cluster
@@ -297,10 +301,7 @@ describe("CouchbaseModule (Dynamic)", () => {
       const props: {
         property: string
         options: PropOptions
-      }[] = Reflect.getMetadata(
-        PROP_METADATA_KEY,
-        ownerModel.targetSchemaClass,
-      )
+      }[] = Reflect.getMetadata(PROP_METADATA_KEY, ownerModel.targetSchemaClass)
 
       const processData = await ownerModel.create(testData)
       subChildField(testData).forEach((field) => {

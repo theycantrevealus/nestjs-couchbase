@@ -8,6 +8,7 @@ import {
   TransactionGetResult,
   CollectionManager,
   Bucket,
+  TransactionQueryResult,
 } from "couchbase"
 import {
   plainToInstance,
@@ -67,37 +68,54 @@ export class CouchBaseModel<T extends object> {
     scope: string,
     collection: string,
   ) {
-    if (scope !== "_default") {
-      try {
-        await Promise.race([
-          manager.createScope(scope),
-          new Promise((_, r) =>
-            setTimeout(() => r(new Error("timeout")), 10000),
-          ),
-        ])
-      } catch (err: any) {
-        if (
-          !err.message.includes("already exists") &&
-          !err.message.includes("timeout")
-        ) {
-          console.warn("Scope issue:", err)
+    if (manager) {
+      const scopes = await manager.getAllScopes()
+      const targetScope = scopes.find((foundScope) => foundScope.name === scope)
+
+      if (scope !== "_default") {
+        try {
+          if (!targetScope) {
+            await Promise.race([
+              manager.createScope(scope),
+              new Promise((_, r) =>
+                setTimeout(() => r(new Error("timeout")), 10000),
+              ),
+            ])
+          }
+        } catch (err: any) {
+          if (
+            !err.message.includes("already exists") &&
+            !err.message.includes("timeout")
+          ) {
+            console.warn("Scope issue:", err)
+          }
         }
       }
-    }
 
-    try {
-      await Promise.race([
-        manager.createCollection(collection, scope),
-        new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 10000)),
-      ])
-    } catch (err: any) {
-      if (err.message.includes("timeout")) {
-        console.warn(
-          `createCollection() timed out for ${scope}.${collection} — likely hanging on Management API`,
+      try {
+        const collectionExists = targetScope.collections.some(
+          (foundCollection) => foundCollection.name === collection,
         )
-      } else if (!err.message.includes("collection exists")) {
-        console.warn("Collection creation failed:", err)
+
+        if (!collectionExists) {
+          await Promise.race([
+            manager.createCollection(collection, scope),
+            new Promise((_, r) =>
+              setTimeout(() => r(new Error("timeout")), 10000),
+            ),
+          ])
+        }
+      } catch (err: any) {
+        if (err.message.includes("timeout")) {
+          console.warn(
+            `createCollection() timed out for ${scope}.${collection} — likely hanging on Management API`,
+          )
+        } else if (!err.message.includes("collection exists")) {
+          console.warn("Collection creation failed:", err)
+        }
       }
+    } else {
+      console.warn("Collection manager is not configured")
     }
   }
 
@@ -122,10 +140,7 @@ export class CouchBaseModel<T extends object> {
     )
   }
 
-  private deepMerge(
-    target: any,
-    source: any,
-  ) {
+  private deepMerge(target: any, source: any) {
     for (const key of Object.keys(source)) {
       const value = source[key]
 
@@ -148,7 +163,7 @@ export class CouchBaseModel<T extends object> {
 
   private applyDefaults<T extends object>(
     data: Partial<T>,
-    schemaClass: new () => T
+    schemaClass: new () => T,
   ): Partial<T> {
     const defaults = Reflect.getMetadata(PROP_DEFAULT_KEY, schemaClass) || {}
     const clone: any = { ...data }
@@ -313,6 +328,16 @@ export class CouchBaseModel<T extends object> {
       await tx.remove(doc)
     } else {
       await this.collection.remove(id)
+    }
+  }
+
+  async removeAll(tx?: TransactionAttemptContext): Promise<void> {
+    if (tx) {
+      await tx.query("DELETE FROM `testing`.`_default`.`breed`")
+    } else {
+      await this.cluster.query(
+        `DELETE FROM \`${this.bucketName}\`.\`${this.collection.scope.name}\`.\`${this.collection.name}\``,
+      )
     }
   }
 

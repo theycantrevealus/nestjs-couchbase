@@ -40,11 +40,11 @@ describe("Couchbase actual test", () => {
   })
 
   beforeEach(async () => {
-    await breedModel.query("DELETE FROM `testing`.`_default`.`breed`")
+    await breedModel.removeAll()
   })
 
   afterEach(async () => {
-    await breedModel.query("DELETE FROM `testing`.`_default`.`breed`")
+    await breedModel.removeAll()
   })
 
   describe("Couchbase module injection test", () => {
