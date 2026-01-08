@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.8.1...v1.8.2) (2026-01-08)
+
+
+### Bug Fixes
+
+* include util export for util decorator ([d1759e6](https://github.com/theycantrevealus/nestjs-couchbase/commit/d1759e6cfbeba6682357d0cdd229b66146f19c10))
+
 ## [1.8.1](https://github.com/theycantrevealus/nestjs-couchbase/compare/v1.8.0...v1.8.1) (2025-12-19)
 
 
