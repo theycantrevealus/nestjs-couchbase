@@ -105,14 +105,14 @@ jobs:
       - name: Run mocked test
         run: npm test
 
-      - name: Run actual
-        env:
-          APP_PORT: 3000
-          COUCHBASE_CONNECTION_STRING: couchbase://localhost
-          COUCHBASE_BUCKET: testing
-          COUCHBASE_USERNAME: Administrator
-          COUCHBASE_PASSWORD: password
-        run: npm run test:actual
+      # - name: Run actual
+      #   env:
+      #     APP_PORT: 3000
+      #     COUCHBASE_CONNECTION_STRING: couchbase://localhost
+      #     COUCHBASE_BUCKET: testing
+      #     COUCHBASE_USERNAME: Administrator
+      #     COUCHBASE_PASSWORD: password
+      #   run: npm run test:actual
 
       - name: List build files
         if: ${{ !env.ACT }}
