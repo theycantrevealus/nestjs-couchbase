@@ -1,4 +1,4 @@
-import { ClassConstructor, Type } from "class-transformer"
+import { Type } from "class-transformer"
 import {
   KEY_METADATA,
   PENDING_UNIQUE_INDEXES,

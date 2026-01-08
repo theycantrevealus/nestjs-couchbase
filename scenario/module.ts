@@ -2,8 +2,6 @@ import { Module } from "@nestjs/common"
 import { ConfigModule, ConfigService } from "@nestjs/config"
 import { BreedService } from "./services/service.breed"
 import { Breed } from "./schema/breed"
-import { Cat } from "./schema/cat"
-import { Owner } from "./schema/owner"
 import { CouchBaseModule } from "../src"
 
 @Module({

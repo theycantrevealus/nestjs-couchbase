@@ -63,9 +63,8 @@ export class CouchBaseService
       try {
         await this.cluster.query(query)
       } catch (err: any) {
-        if (!err.message.includes("already exists")) {
+        if (!err.message.includes("already exists"))
           console.warn(`Failed to create index ${idx.indexName}:`, err)
-        }
       }
     }
 

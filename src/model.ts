@@ -93,7 +93,7 @@ export class CouchBaseModel<T extends object> {
       }
 
       try {
-        const collectionExists = targetScope.collections.some(
+        const collectionExists = targetScope?.collections.some(
           (foundCollection) => foundCollection.name === collection,
         )
 
@@ -198,10 +198,7 @@ export class CouchBaseModel<T extends object> {
     return clone
   }
 
-  private serializeRelations(
-    instance: any,
-    schemaClass: Function
-  ) {
+  private serializeRelations(instance: any, schemaClass: Function) {
     const relations = Reflect.getMetadata(RELATIONS_KEY, schemaClass) || []
     for (const rel of relations) {
       const value = instance[rel.propertyKey]
@@ -213,7 +210,7 @@ export class CouchBaseModel<T extends object> {
 
       if (Array.isArray(value)) {
         instance[rel.propertyKey] = value.map((v) =>
-          typeof v === "object" && v.id ? v.id : v
+          typeof v === "object" && v.id ? v.id : v,
         )
       }
     }

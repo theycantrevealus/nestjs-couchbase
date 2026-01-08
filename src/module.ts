@@ -1,12 +1,4 @@
-import {
-  DynamicModule,
-  Global,
-  Inject,
-  Module,
-  OnModuleDestroy,
-  Provider,
-  Type,
-} from "@nestjs/common"
+import { DynamicModule, Global, Module, Provider, Type } from "@nestjs/common"
 import * as couchbase from "couchbase"
 import {
   ICouchBaseAsyncOptions,
@@ -19,7 +11,6 @@ import {
   COUCHBASE_BUCKET,
   COUCHBASE_CLUSTER,
   COUCHBASE_OPTIONS,
-  SCHEMA_KEY,
   SCHEMA_KEY_OPT,
 } from "./constant"
 import { CouchBaseModel } from "./model"

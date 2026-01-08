@@ -1,4 +1,4 @@
-import { applyDecorators, Inject, Type } from "@nestjs/common"
+import { applyDecorators, Inject } from "@nestjs/common"
 import {
   IsDefined,
   IsString,
